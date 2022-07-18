@@ -8,6 +8,7 @@ class Station {
 
 class Building {
     constructor() {
+        this.status = "NONE";
         this.name;
         this.address;
         this.age;
@@ -19,6 +20,7 @@ class Building {
 
 class Apartment {
     constructor() {
+        this.status = "NONE";
         this.price;
         this.managementFee;
         this.floor;

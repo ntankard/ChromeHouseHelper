@@ -12,7 +12,7 @@ console.log("Detected page type is: " + pageType);
 // If its a Apartment type, scrape the core data
 switch (pageType) {
     case "Apartment_2":
-        rawBuilding = getBuilding2();
+        loadApartmentPage();
         break;
 }
 
@@ -20,6 +20,17 @@ switch (pageType) {
 chrome.runtime.onMessage.addListener(gotMessage);
 
 // FUNCTIONS ===========================================================================================================
+
+/**
+ * Load the page assuming an apartment style page
+ */
+function loadApartmentPage() {
+    switch (pageType) {
+        case "Apartment_2":
+            rawBuilding = getBuilding2();
+            break;
+    }
+}
 
 /**
  * Process all income messages. Expects message.type to be present and can respond to getPageType and getApartment 
@@ -34,6 +45,7 @@ function gotMessage(message, sender, sendResponse) {
             sendResponse(pageType);
             break;
         case "getApartment":
+            loadApartmentPage(); // Reload data incase the popup has changed it and is reloading itself
             if (rawBuilding) {
                 sendResponse(rawBuilding);
             } else {

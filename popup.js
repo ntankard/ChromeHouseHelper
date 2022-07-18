@@ -1,10 +1,11 @@
 // LOCAL DATA ==========================================================================================================
 
 // Buttons
-let saveBtn = document.getElementById('btnSave')
-let goodBtn = document.getElementById('btnGood')
-let badBtn = document.getElementById('btnBad')
-let badBuildingBtn = document.getElementById('btnBadBuilding')
+let saveBtn = document.getElementById('btnSave');
+let goodBtn = document.getElementById('btnGood');
+let badBtn = document.getElementById('btnBad');
+let badBuildingBtn = document.getElementById('btnBadBuilding');
+let exportBtn = document.getElementById('btnExport');
 
 // Data display
 let pageType = document.getElementById('pageType');
@@ -12,12 +13,16 @@ let databaseStatus = document.getElementById('databaseStatus');
 let monthlyCost = document.getElementById('monthlyCost');
 let moveInCost = document.getElementById('moveInCost');
 let totalMonthlyCost = document.getElementById('totalMonthlyCost');
+let buildingStatus = document.getElementById('buildingStatus');
+let apartmentStatus = document.getElementById('apartmentStatus');
 
 // Inputs
 let commentText = document.getElementById('commentText');
 
 // Local data
+let inDatabase = false;
 let rawBuilding;
+let buildingID;
 let building;
 let apartmentID;
 let page;
@@ -25,17 +30,23 @@ let page;
 
 // MAIN CODE ===========================================================================================================
 
+exportBtn.addEventListener('click', exportAction);
+
 // Communicate with the content page to get the data
 // TODO this is a problem because we are doing everything on the call back, we need to find out how to do a blocking call here
-chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (!tabs[0].url.includes('https://suumo.jp')) {
-        alert('please go to https://suumo.jp/');
-        return;
-    }
-    findPageType(tabs);
-});
+loadPopup();
 
 // FUNCTIONS ===========================================================================================================
+
+function loadPopup() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (!tabs[0].url.includes('https://suumo.jp')) {
+            alert('please go to https://suumo.jp/');
+            return;
+        }
+        findPageType(tabs);
+    });
+}
 
 /**
  * Continue to query the tab until the page type is returned (has the effect of waiting for load)
@@ -102,11 +113,14 @@ async function loadApartment(tabs) {
         if (matchResult.matchType == "Full") {
             building = matchResult.building;
             apartmentID = matchResult.apartmentID;
+            buildingID = matchResult.buildingID;
             databaseStatus.value = "Full Match";
+            inDatabase = true;
         } else {
             building = rawBuilding;
             apartmentID = 0;
             databaseStatus.value = "New, not saved";
+            inDatabase = false;
         }
         populateData();
     } else {
@@ -115,12 +129,12 @@ async function loadApartment(tabs) {
     }
 
     // Attach listeners
-    saveBtn.addEventListener('click', saveAction);
+    // saveBtn.addEventListener('click', saveAction);
     goodBtn.addEventListener('click', goodAction);
     badBtn.addEventListener('click', badAction);
     badBuildingBtn.addEventListener('click', badBuildingAction);
 
-    saveBtn.disabled = false;
+    // saveBtn.disabled = false;
     goodBtn.disabled = false;
     badBtn.disabled = false;
     badBuildingBtn.disabled = false;
@@ -132,5 +146,50 @@ async function loadApartment(tabs) {
 function populateData() {
     monthlyCost.value = building.apartments[apartmentID].price + building.apartments[apartmentID].managementFee;
     moveInCost.value = building.apartments[apartmentID].keyMoney;
-    totalMonthlyCost.value = (building.apartments[apartmentID].price + building.apartments[apartmentID].managementFee) + (building.apartments[apartmentID].keyMoney / 24)
+    totalMonthlyCost.value = (building.apartments[apartmentID].price + building.apartments[apartmentID].managementFee) + (building.apartments[apartmentID].keyMoney / 24);
+    buildingStatus.value = building.status;
+    apartmentStatus.value = building.apartments[apartmentID].status;
+}
+
+/**
+ * goodAction action listener
+ */
+function goodAction() {
+    building.apartments[apartmentID].status = "GOOD";
+    updateRecord();
+}
+
+/**
+ * badAction action listener
+ */
+function badAction() {
+    building.apartments[apartmentID].status = "BAD";
+    updateRecord();
+}
+
+/**
+ * badBuildingBtn action listener
+ */
+function badBuildingAction() {
+    building.status = "BAD";
+    updateRecord();
+}
+
+/**
+ * exportBtn action listener
+ */
+function exportAction(){
+    exportDatabase();
+}
+
+/**
+ * Sync the popup data to the database and reload everything
+ */
+function updateRecord() {
+    if (inDatabase) {
+        updateApartment(building, buildingID, apartmentID);
+    } else {
+        addNewBuilding(building);
+    }
+    loadPopup();
 }
