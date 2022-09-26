@@ -1,0 +1,23 @@
+{
+  "name": "chromehousehelper",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "databaseUtil.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ntankard/ChromeHouseHelper.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ntankard/ChromeHouseHelper/issues"
+  },
+  "homepage": "https://github.com/ntankard/ChromeHouseHelper#readme",
+  "devDependencies": {
+    "jest": "^29.0.3"
+  }
+}
