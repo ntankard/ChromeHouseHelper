@@ -61,6 +61,7 @@ const REQUEST_PAGE_APARTMENT = "getApartment";
 
 const PAGE_TYPE_APARTMENT = "Apartment";
 const PAGE_TYPE_SEARCH = "Search";
+const PAGE_TYPE_UNKNOWN = "Unknown";
 
 if (typeof require === 'function') {
     module.exports = {

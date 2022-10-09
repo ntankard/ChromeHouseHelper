@@ -7,14 +7,60 @@ const SIMILARLY_TYPE_MISMATCH = 0; // At least 1 attribute is different in an in
 
 // PUBLIC ==============================================================================================================
 
+function n_mergeIntoDatabase(updatedBuilding, database) {
+    // New Building
+    let toUpdate;
+    if (updatedBuilding.databaseID == -1) {
+        toUpdate = updatedBuilding;
+        updatedBuilding.databaseID = database.coreData.length;
+        database.coreData.push(updatedBuilding);
+    } else {
+        toUpdate = database.coreData[updatedBuilding.databaseID];
+        n_mergeBuilding(database.coreData[updatedBuilding.databaseID], updatedBuilding);
+    }
+
+    // Update station IDs
+    for (let i = 0; i < toUpdate.stations.length; i++) {
+        if (toUpdate.stations[i].databaseID != -1 && toUpdate.stations[i].databaseID != i) {
+            throw "Database corruption";
+        }
+        toUpdate.stations[i].databaseID = i;
+    }
+
+    // Update apartment IDs
+    for (let i = 0; i < toUpdate.apartments.length; i++) {
+        if (toUpdate.apartments[i].databaseID != -1 && toUpdate.apartments[i].databaseID != i) {
+            throw "Database corruption";
+        }
+        toUpdate.apartments[i].databaseID = i;
+        toUpdate.apartments[i].buildingDatabaseID = toUpdate.databaseID;
+    }
+
+    // Update map if new data is present
+    for (let apartment of toUpdate.apartments) {
+        if (apartment.suumoID != null) {
+            if (!database.suumoIDMap.has(apartment.suumoID)) {
+                database.suumoIDMap.set(apartment.suumoID, { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+            }
+        }
+    }
+
+    database.coreData[updatedBuilding.databaseID] = toUpdate;
+}
+
 /**
  * Update a building with info from another (includes apartment and station)
  * @param {Building} storedBuilding The building to update
  * @param {Building} nonStoredBuilding The source of new data
+ * @returns The map between the apartments in the nonStoredBuilding and in the new storedBuilding
  */
 function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
     let result = n_compareFullBuilding(storedBuilding, nonStoredBuilding);
     if (result.similarity == SIMILARLY_TYPE_MISMATCH) {
+        console.log("Stored");
+        console.log(storedBuilding);
+        console.log("ToAdd");
+        console.log(nonStoredBuilding);
         throw "Trying to merge incompatible buildings";
     }
 
@@ -86,6 +132,8 @@ function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
             }
         }
     }
+
+    return matchIDs;
 }
 
 /**
@@ -107,7 +155,8 @@ function n_validateDatabase(database) {
                 return false;
             }
             if (database.coreData[i].apartments[j].suumoID != null) {
-                if (JSON.stringify(database.suumoIDMap.get(database.coreData[i].apartments[j].suumoID)) !== JSON.stringify({ buildingID: i, apartmentID: j })) {
+                let mapResult = database.suumoIDMap.get(database.coreData[i].apartments[j].suumoID);
+                if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
                     return false;
                 }
                 mapCount++;
@@ -196,6 +245,20 @@ function n_compareFullBuilding(storedBuilding, nonStoredBuilding) {
  * @returns The maximum level of confidence seen between any 2 apartments
  */
 function n_findApartmentMappingLevel(storedApartments, nonStoredApartments, minMatch, matchIDs, usedIDs) {
+    // Check similarity of known matches 
+    let allIdentical = true;
+    let maxGlobalMatch = SIMILARLY_TYPE_MISMATCH;
+    for (let nsa = 0; nsa < matchIDs.length; nsa++) {
+        if (matchIDs[nsa] != -1) {
+            let apartmentMatch = n_compareApartment(storedApartments[matchIDs[nsa]], nonStoredApartments[nsa]);
+            if (!apartmentMatch.identical) {
+                allIdentical = false;
+            }
+            if (apartmentMatch.similarity > maxGlobalMatch) {
+                maxGlobalMatch = apartmentMatch.similarity;
+            }
+        }
+    }
 
     // For each pair of apartments find out how similar they are
     var similarities = [];
@@ -220,8 +283,6 @@ function n_findApartmentMappingLevel(storedApartments, nonStoredApartments, minM
     similarities = similarities.sort((a, b) => ((b.match.similarity * 2) + b.match.identical) - ((a.match.similarity * 2) + b.match.identical));
 
     // Assign the best pair
-    let maxGlobalMatch = SIMILARLY_TYPE_MISMATCH;
-    let allIdentical = true;
     for (const similarity of similarities) {
 
         // Once its below min stop sorting
@@ -250,50 +311,6 @@ function n_findApartmentMappingLevel(storedApartments, nonStoredApartments, minM
     };
 }
 
-// /**
-//  * Attempt to match 2 lists of apartments based on there similarity. This only searches and does not modify the lists
-//  * @param {*} nonStoredApartments The new list of apartments
-//  * @param {*} storedApartments The existing list of apartments
-//  * @param {*} minMatch The minimum level of similarity needed for a match to be considered
-//  * @param {*} matchIDs An array of the same size as nonStoredApartments listing the IDs in storedApartments that match for each apartment. This is updated in this function
-//  * @param {*} usedIDs A list of storedApartments IDs that are already linked to apartments
-//  * @returns The maximum level of confidence seen between any 2 apartments
-//  */
-// function n_findApartmentMappingLevel2(storedApartments, nonStoredApartments, minMatch, matchIDs, usedIDs) {
-//     let maxGlobalMatch = SIMILARLY_TYPE_MISMATCH;
-//     for (let nsa = 0; nsa < nonStoredApartments.length; nsa++) {                                // For each scraped apartment to find a match for
-//         if (matchIDs[nsa] != -1) {
-//             continue;
-//         }
-//         nonStoredApartment = nonStoredApartments[nsa];
-//         let maxMatch = SIMILARLY_TYPE_MISMATCH;
-//         let bestID = -1;
-//         for (let sa = 0; sa < storedApartments.length; sa++) {                                  // For each apartment in the database
-//             if (usedIDs.includes(sa)) {                                                           // Unless it is claimed by another apartment
-//                 continue;
-//             }
-//             storedApartment = storedApartments[sa];
-//             let apartmentMatch = n_compareApartment(storedApartment, nonStoredApartment);       // Determine how similar they are
-//             if (apartmentMatch > maxMatch) {                                                      // If this apartment is more similar that one seen before 
-//                 if (maxMatch >= SIMILARLY_TYPE_ID_MATCH) {                                        // If the match is not imposable
-//                     throw "More than one apartment with the same ID is in the database"
-//                 }
-//                 maxMatch = apartmentMatch;
-//                 bestID = sa;                                                                    // Mark this apartment as a posable match
-//             }
-//         }
-
-//         if (maxMatch >= minMatch) {                                                               // If a match higher than the minimum was found
-//             matchIDs[nsa] = bestID;                                                             // Record the possible match
-//             usedIDs.push(bestID);                                                               // Remove the database entry from future consideration
-//             if (maxMatch > maxGlobalMatch) {
-//                 maxGlobalMatch = maxMatch;
-//             }
-//         }
-//     }
-//     return maxGlobalMatch;
-// }
-
 /**
  * Determine if 2 buildings are similar (databaseID as well as all apartments are ignored)
  * @param {Building} storedBuilding The first building to compare
@@ -313,19 +330,20 @@ function n_compareBuilding(storedBuilding, nonStoredBuilding) {
     // Compare attributes that have complex matching parameters (TODO check this better)
     n_compareAttribute(storedBuilding.name, nonStoredBuilding.name, attResult);
     n_compareAttribute(storedBuilding.address, nonStoredBuilding.address, attResult);
+    n_compareAttribute(storedBuilding.suumoName, nonStoredBuilding.suumoName, attResult);
 
     // Compare base attributes (TODO this is not perfect atm)
     attResult.mismatch = false;
     n_compareAttribute(storedBuilding.age, nonStoredBuilding.age, attResult);
     n_compareAttribute(storedBuilding.stories, nonStoredBuilding.stories, attResult);
-    n_compareAttribute(storedBuilding.suumoName, nonStoredBuilding.suumoName, attResult);
     n_compareAttribute(storedBuilding.suumoAddress, nonStoredBuilding.suumoAddress, attResult);
 
     let matchIDs = Array(nonStoredBuilding.stations.length).fill(-1);
     let usedIDs = [];
     let stationResult = n_compareStations(storedBuilding.stations, nonStoredBuilding.stations, matchIDs, usedIDs);
 
-    if (attResult.mismatch || stationResult.similarity == SIMILARLY_TYPE_ID_MATCH) {
+    // TODO this used to be wrong and the test did not get it, check this
+    if (attResult.mismatch || stationResult.similarity == SIMILARLY_TYPE_MISMATCH) {
         return {
             similarity: SIMILARLY_TYPE_MISMATCH,
             identical: false
@@ -333,13 +351,16 @@ function n_compareBuilding(storedBuilding, nonStoredBuilding) {
     }
 
     if (storedBuilding.suumoName != null && storedBuilding.suumoAddress != null
-        && nonStoredBuilding.suumoName != null && nonStoredBuilding.suumoAddress != null) {
+        && nonStoredBuilding.suumoName != null && nonStoredBuilding.suumoAddress != null
+        && (nonStoredBuilding.suumoName == storedBuilding.suumoName)
+        && (nonStoredBuilding.suumoAddress == storedBuilding.suumoAddress)) {
         return {
             similarity: SIMILARLY_TYPE_POSSIBLE_MATCH,
             identical: attResult.allIdentical && stationResult.identical
         };
     }
 
+    // TODO this failed and tests did not catch it
     if (storedBuilding.name != null && storedBuilding.address != null
         && nonStoredBuilding.name != null && nonStoredBuilding.address != null
         && (nonStoredBuilding.name.includes(storedBuilding.name) || storedBuilding.name.includes(nonStoredBuilding.name))
@@ -546,6 +567,7 @@ function n_compareAttribute(att1, att2, attResult) {
 
 if (typeof require === 'function') {
     module.exports = {
+        n_mergeIntoDatabase: n_mergeIntoDatabase,
         n_mergeBuilding: n_mergeBuilding,
         n_validateDatabase: n_validateDatabase,
         n_findBuilding: n_findBuilding,

@@ -1,4 +1,5 @@
 const Types = require('./../utils/coreDataTypes');
+const { n_validateDatabase, n_mergeIntoDatabase } = require('./../utils/coreDataTypesUtil');
 const DatabaseUtil = require('./../utils/coreDataTypesUtil');
 
 function generateTestBuildings(size) {
@@ -44,6 +45,121 @@ function makeDatabase(buildings) {
 
     return database;
 }
+
+test("n_mergeIntoDatabase", () => {
+    let database = makeDatabase(generateTestBuildings(3));
+    let building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.apartments.push(new Types.Apartment());
+    expect(building.apartments[0].databaseID).toBe(-1);
+    n_mergeIntoDatabase(building, database);
+    expect(building.apartments[0].databaseID).toBe(0);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    database = makeDatabase(generateTestBuildings(3));
+    building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.apartments.push(new Types.Apartment());
+    building.apartments.push(new Types.Apartment());
+    building.apartments.push(new Types.Apartment());
+    expect(building.apartments[0].databaseID).toBe(-1);
+    expect(building.apartments[1].databaseID).toBe(-1);
+    expect(building.apartments[2].databaseID).toBe(-1);
+    n_mergeIntoDatabase(building, database);
+    expect(building.apartments[0].databaseID).toBe(0);
+    expect(building.apartments[1].databaseID).toBe(1);
+    expect(building.apartments[2].databaseID).toBe(2);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    let buildings = generateTestBuildings(3);
+    buildings[1].apartments.push(new Types.Apartment());
+    buildings[1].apartments.push(new Types.Apartment());
+    database = makeDatabase(buildings);
+    building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.apartments.push(new Types.Apartment());
+    expect(building.apartments[0].databaseID).toBe(0);
+    expect(building.apartments[1].databaseID).toBe(1);
+    expect(building.apartments[2].databaseID).toBe(-1);
+    n_mergeIntoDatabase(building, database);
+    expect(building.apartments[0].databaseID).toBe(0);
+    expect(building.apartments[1].databaseID).toBe(1);
+    expect(building.apartments[2].databaseID).toBe(2);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    buildings = generateTestBuildings(3);
+    database = makeDatabase(buildings);
+    building = new Types.Building();
+    building.apartments.push(new Types.Apartment());
+    expect(building.databaseID).toBe(-1);
+    expect(building.apartments[0].databaseID).toBe(-1);
+    n_mergeIntoDatabase(building, database);
+    expect(building.databaseID).toBe(3);
+    expect(building.apartments[0].databaseID).toBe(0);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    database = makeDatabase(generateTestBuildings(3));
+    building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.stations.push(new Types.Station());
+    expect(building.stations[0].databaseID).toBe(-1);
+    n_mergeIntoDatabase(building, database);
+    expect(building.stations[0].databaseID).toBe(0);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    database = makeDatabase(generateTestBuildings(3));
+    database.coreData[1].status = "TEST1";
+    building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.status = "TEST2";
+    expect(database.coreData[1].status).toBe("TEST1");
+    n_mergeIntoDatabase(building, database);
+    expect(database.coreData[1].status).toBe("TEST2");
+    expect(n_validateDatabase(database)).toBe(true);
+
+    buildings = generateTestBuildings(3);
+    buildings[1].apartments.push(new Types.Apartment());
+    buildings[1].apartments[0].status = "AA";
+    database = makeDatabase(buildings);
+    building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.apartments[0].status = "BB";
+    expect(database.coreData[1].apartments[0].status).toBe("AA");
+    n_mergeIntoDatabase(building, database);
+    expect(database.coreData[1].apartments[0].status).toBe("BB");
+    expect(n_validateDatabase(database)).toBe(true);
+
+    buildings = generateTestBuildings(3);
+    buildings[1].apartments.push(new Types.Apartment());
+    database = makeDatabase(buildings);
+    building = JSON.parse(JSON.stringify(database.coreData[1]));
+    building.apartments[0].suumoID = 123;
+    expect(database.coreData[1].apartments[0].suumoID).toBe(undefined);
+    n_mergeIntoDatabase(building, database);
+    expect(database.coreData[1].apartments[0].suumoID).toBe(123);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    database = makeDatabase([]);
+    building = new Types.Building()
+    building.apartments.push(new Types.Apartment());
+    building.apartments[0].suumoID = 123;
+    n_mergeIntoDatabase(building, database);
+    expect(database.coreData[0].apartments[0].suumoID).toBe(123);
+    expect(n_validateDatabase(database)).toBe(true);
+
+    database = makeDatabase([]);
+    building = new Types.Building();
+    building.apartments.push(new Types.Apartment());
+    building.apartments[0].suumoID = 123;
+    building.statements = generateTestStations(1);
+    n_mergeIntoDatabase(building, database);
+    expect(n_validateDatabase(database)).toBe(true);
+    expect(database.coreData[0].statements.length).toBe(1);
+    expect(database.coreData[0].apartments.length).toBe(1);
+    building = new Types.Building();
+    building.databaseID = 0;
+    building.apartments.push(new Types.Apartment());
+    building.apartments[0].suumoID = 124;
+    building.statements = generateTestStations(1);
+    n_mergeIntoDatabase(building, database);
+    expect(n_validateDatabase(database)).toBe(true);
+    expect(database.coreData[0].statements.length).toBe(1);
+    expect(database.coreData[0].apartments.length).toBe(2);
+});
 
 test("n_mergeBuilding", () => {
     let store = new Types.Building();
@@ -219,6 +335,26 @@ test("n_mergeBuilding", () => {
     nonStored.stations[1].distance = 5;
     DatabaseUtil.n_mergeBuilding(store, nonStored);
     expect(store.stations.length).toBe(3);
+
+    store = new Types.Building();
+    nonStored = new Types.Building();
+    store.databaseID = 0;
+    nonStored.databaseID = 0;
+    store.apartments = generateTestApartments(4);
+    nonStored.apartments = generateTestApartments(5);
+    nonStored.apartments[1].databaseID = 3;
+    nonStored.apartments[1].price = 10;
+    nonStored.apartments[1].layout = "1LDK";
+    nonStored.apartments[1].size = 25.1;
+    nonStored.apartments[1].floor = 500;
+    store.apartments[3].databaseID = 3;
+    store.apartments[3].price = 10;
+    store.apartments[3].layout = "1LDK";
+    store.apartments[3].size = 25.1;
+    expect(store.apartments[3].floor).toBe(undefined);
+    DatabaseUtil.n_mergeBuilding(store, nonStored);
+    expect(store.apartments.length).toBe(4 + 5 - 1);
+    expect(store.apartments[3].floor).toBe(500);
 })
 
 test("n_validateDatabase", () => {
@@ -760,6 +896,64 @@ test("n_findApartmentMappingLevel", () => {
             expect(usedIDs).toContain(id);
         }
     }
+
+    nonStoredApartments = generateTestApartments(6);
+    storedApartments = generateTestApartments(6);
+    matchIDs = Array(nonStoredApartments.length).fill(-1);
+    usedIDs = [];
+    nonStoredApartments[1].price = 10;
+    nonStoredApartments[1].layout = "1LDK";
+    nonStoredApartments[1].size = 25.1;
+    nonStoredApartments[1].status = "UPDATED";
+    storedApartments[3].price = 10;
+    storedApartments[3].layout = "1LDK";
+    storedApartments[3].size = 25.1;
+    matchIDs[1] = 3;
+    usedIDs.push(3);
+    expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: false });
+    for (id of matchIDs) {
+        if (id != -1) {
+            expect(usedIDs).toContain(id);
+        }
+    }
+
+    nonStoredApartments = generateTestApartments(6);
+    storedApartments = generateTestApartments(6);
+    matchIDs = Array(nonStoredApartments.length).fill(-1);
+    usedIDs = [];
+    nonStoredApartments[1].status = "UPDATED";
+    matchIDs[1] = 3;
+    usedIDs.push(3);
+    expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
+    for (id of matchIDs) {
+        if (id != -1) {
+            expect(usedIDs).toContain(id);
+        }
+    }
+
+    nonStoredApartments = generateTestApartments(6);
+    storedApartments = generateTestApartments(6);
+    matchIDs = Array(nonStoredApartments.length).fill(-1);
+    usedIDs = [];
+    expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: true });
+    for (id of matchIDs) {
+        if (id != -1) {
+            expect(usedIDs).toContain(id);
+        }
+    }
+
+    nonStoredApartments = generateTestApartments(6);
+    storedApartments = generateTestApartments(6);
+    matchIDs = Array(nonStoredApartments.length).fill(-1);
+    usedIDs = [];
+    matchIDs[1] = 3;
+    usedIDs.push(3);
+    expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: true });
+    for (id of matchIDs) {
+        if (id != -1) {
+            expect(usedIDs).toContain(id);
+        }
+    }
 })
 
 test("n_compareBuilding", () => {
@@ -837,9 +1031,6 @@ test("n_compareBuilding", () => {
     bu_a.suumoAddress = "123 f";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: false });
 
-    bu_a.suumoName = "test1";
-    expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_MISMATCH, identical: false });
-
     bu_a = new Types.Building();
     bu_b = new Types.Building();
     bu_a.suumoName = "name";
@@ -880,6 +1071,9 @@ test("n_compareBuilding", () => {
     bu_b.stations = generateTestStations(2);
     bu_b.stations[0].distance = 1;
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
+
+    // Case where the name included the apartment number
+    // Case where there is a station mismatch
 })
 
 test("n_compareStations", () => {

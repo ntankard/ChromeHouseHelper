@@ -45,7 +45,6 @@ const syncStorageLocalGet = async (key) => {
             if (result[key] === undefined) {
                 reject();
             } else {
-                console.log(result[key])
                 resolve(result[key]);
             }
         });

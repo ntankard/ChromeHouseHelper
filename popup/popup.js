@@ -6,6 +6,7 @@ let goodBtn = document.getElementById('btnGood');
 let badBtn = document.getElementById('btnBad');
 let badBuildingBtn = document.getElementById('btnBadBuilding');
 let exportBtn = document.getElementById('btnExport');
+let resetBtn = document.getElementById('btnReset');
 
 // Data display
 let pageType = document.getElementById('pageType');
@@ -20,17 +21,14 @@ let apartmentStatus = document.getElementById('apartmentStatus');
 let commentText = document.getElementById('commentText');
 
 // Local data
-let inDatabase = false;
 let rawBuilding;
-let buildingID;
-let building;
+let databaseMatch;
 let apartmentID;
-let page;
-
 
 // MAIN CODE ===========================================================================================================
 
 exportBtn.addEventListener('click', exportAction);
+resetBtn.addEventListener('click', resetAction);
 
 // Communicate with the content page to get the data
 // TODO this is a problem because we are doing everything on the call back, we need to find out how to do a blocking call here
@@ -38,6 +36,9 @@ loadPopup();
 
 // FUNCTIONS ===========================================================================================================
 
+/**
+ * Render the popup
+ */
 function loadPopup() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         if (!tabs[0].url.includes('https://suumo.jp')) {
@@ -53,7 +54,8 @@ function loadPopup() {
  * @param {*} tabs The tab to communicate with
  */
 function findPageType(tabs) {
-    chrome.tabs.sendMessage(tabs[0].id, { type: "getPageType" }, function (response) {
+    chrome.tabs.sendMessage(tabs[0].id, { type: REQUEST_PAGE_TYPE }, function (response) {
+        console.log(response)
         if (response) {
             page = response;
             processPageType(tabs);
@@ -72,13 +74,12 @@ function findPageType(tabs) {
  */
 function processPageType(tabs) {
     switch (page) {
-        case "Apartment_1":
-        case "Apartment_2":
-            pageType.value = "Apartment";
+        case PAGE_TYPE_APARTMENT:
+            pageType.value = PAGE_TYPE_APARTMENT;
             loadApartment(tabs)
             return;
-        case "Search":
-            pageType.value = "Search";
+        case PAGE_TYPE_SEARCH:
+            pageType.value = PAGE_TYPE_SEARCH;
             break;
         default:
             pageType.value = "Unknown";
@@ -99,56 +100,86 @@ function loadNoApartment() {
  * @param {*} tabs  The tabs to talk to
  */
 async function loadApartment(tabs) {
-    let response = await syncSendMessage(tabs[0].id, { type: "getApartment" });
 
-    if (response) {
-        rawBuilding = response;
-        console.log("response")
-        console.log(response)
-        let matchResult = await findMatchSingleApartment(rawBuilding);
+    // Get the apartment to render
+    rawBuilding = await syncSendMessage(tabs[0].id, { type: REQUEST_PAGE_APARTMENT });
+    if (rawBuilding) {
+        console.log("Received Apartment");
+        console.log(rawBuilding);
 
-        console.log("Match results");
-        console.log(matchResult);
+        // Check for a database match
+        let totalResult = await findBuilding(rawBuilding);
+        console.log("From Database");
+        console.log(totalResult);
 
-        if (matchResult.matchType == "Full") {
-            building = matchResult.building;
-            apartmentID = matchResult.apartmentID;
-            buildingID = matchResult.buildingID;
-            databaseStatus.value = "Full Match";
-            inDatabase = true;
+        building = totalResult.building;
+        console.log("Mapping");
+        console.log(totalResult.apartmentMapping);
+        if (totalResult.apartmentMapping != null) {
+            if (totalResult.apartmentMapping[0] == -1) {
+                apartmentID = building.apartments.length - 1;
+            } else {
+                apartmentID = totalResult.apartmentMapping[0];
+            }
+
         } else {
-            building = rawBuilding;
             apartmentID = 0;
-            databaseStatus.value = "New, not saved";
-            inDatabase = false;
         }
+
+        // Data collection complete, populate data.
         populateData();
+
+        // Attach listeners
+        goodBtn.addEventListener('click', goodAction);
+        badBtn.addEventListener('click', badAction);
+        badBuildingBtn.addEventListener('click', badBuildingAction);
+
+        goodBtn.disabled = false;
+        badBtn.disabled = false;
+        badBuildingBtn.disabled = false;
+
     } else {
         alert("No building data received");
         return;
     }
 
-    // Attach listeners
-    // saveBtn.addEventListener('click', saveAction);
-    goodBtn.addEventListener('click', goodAction);
-    badBtn.addEventListener('click', badAction);
-    badBuildingBtn.addEventListener('click', badBuildingAction);
+}
 
-    // saveBtn.disabled = false;
-    goodBtn.disabled = false;
-    badBtn.disabled = false;
-    badBuildingBtn.disabled = false;
+function apartment() {
+    return building.apartments[apartmentID];
 }
 
 /**
  * Fill out the panel based on the apartment data
  */
 function populateData() {
-    monthlyCost.value = building.apartments[apartmentID].price + building.apartments[apartmentID].managementFee;
-    moveInCost.value = building.apartments[apartmentID].keyMoney;
-    totalMonthlyCost.value = (building.apartments[apartmentID].price + building.apartments[apartmentID].managementFee) + (building.apartments[apartmentID].keyMoney / 24);
+    var formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'JPY',
+
+        // These options are needed to round to whole numbers if that's what you want.
+        //minimumFractionDigits: 0, // (this suffices for whole numbers, but will print 2500.10 as $2,500.1)
+        //maximumFractionDigits: 0, // (causes 2500.99 to be printed as $2,501)
+    });
+
+    console.log(building);
+    console.log(apartmentID);
+
+    if (building.databaseID == -1) {
+        databaseStatus.value = "NEW BUILDING";
+    } else {
+        if (apartment().databaseID == -1) {
+            databaseStatus.value = "NEW APARTMENT";
+        } else {
+            databaseStatus.value = "KNOWN";
+        }
+    }
+
+    monthlyCost.value = formatter.format(apartment().price + apartment().managementFee);
+    moveInCost.value = formatter.format(apartment().keyMoney);
+    totalMonthlyCost.value = formatter.format((apartment().price + apartment().managementFee) + (apartment().keyMoney / 24));
     buildingStatus.value = building.status;
-    apartmentStatus.value = building.apartments[apartmentID].status;
+    apartmentStatus.value = apartment().status;
 }
 
 /**
@@ -178,18 +209,27 @@ function badBuildingAction() {
 /**
  * exportBtn action listener
  */
-function exportAction(){
+function exportAction() {
     exportDatabase();
+    // exportMap();
+}
+
+/**
+ * resetBtn action listener
+ */
+function resetAction() {
+    try {
+        exportDatabase();
+    } catch (e) {
+
+    }
+    resetDatabase();
 }
 
 /**
  * Sync the popup data to the database and reload everything
  */
 function updateRecord() {
-    if (inDatabase) {
-        updateApartment(building, buildingID, apartmentID);
-    } else {
-        addNewBuilding(building);
-    }
+    saveBuilding(building);
     loadPopup();
 }

@@ -1,81 +1,112 @@
-/**
- * Based on a single apartment building, find a match in the database
- * @param {*} rawBuilding The building object to find
- * @returns A match if one is found
- */
-async function findMatchSingleApartment(rawBuilding) {
-    let database = await syncStorageLocalGet('AllBuildings');
+// PUBLIC ==============================================================================================================
 
-    for (building of database) {
-        console.log(rawBuilding.apartments)
-        for (rawApartment of rawBuilding.apartments) {
-            for (url of rawApartment.urls) {
-                for (apartment of building.apartments) {
-                    if (apartment.urls.includes(url)) {
-                        return {
-                            matchType: "Full",
-                            buildingID: database.indexOf(building),
-                            building: building,
-                            apartmentID: building.apartments.indexOf(apartment),
-                            apartment: apartment
-                        }
-                    }
-                }
-            }
-        }
+/**
+ * Erase all data in the database. The existing data will be exported first if posable
+ */
+async function resetDatabase() {
+    saveDatabase(new FullData());
+}
+
+/**
+ * Find a matching building in the database
+ * @param {*} rawBuilding The building to search for
+ * @returns The database entry updated with data from rawBuilding, or rawBuilding as well as a mapping from the apartments on the entry to the ones in the database
+ */
+async function findBuilding(rawBuilding) {
+    // Save a blank database
+    // saveDatabase(new FullData());
+
+    // Load the database
+    let database = await loadDatabase();
+
+    // See if this building is in the database
+    let result = n_findBuilding(rawBuilding, database);
+    if (result == null) {
+        return {
+            building: rawBuilding,
+            apartmentMapping: null
+        };
     }
-    return { matchType: "None" };
+
+    // If it is, merge the 2 sources
+    let mapping = n_mergeBuilding(result, rawBuilding);
+    return {
+        building: result,
+        apartmentMapping: mapping
+    };
 }
 
 /**
- * Add a completely new building to the database
- * @param {*} rawBuilding The building to add
+ * Save a building into the database. New or updated
+ * @param {Building} updatedBuilding Te building to save
  */
-async function addNewBuilding(rawBuilding) {
-    let database = await syncStorageLocalGet('AllBuildings');
-    database.push(rawBuilding);
-    chrome.storage.local.set({ 'AllBuildings': database });
-}
-
-/**
- * Update an individual apartment in a building (can not be used to add a new apartment to a know building)
- * @param {*} building The building containing the apartment to update (other apartments will be ignored)
- * @param {*} buildingID The ID of this building in the database
- * @param {*} apartmentID The ID of the apartment to update in the building and database
- */
-async function updateApartment(building, buildingID, apartmentID) {
-    let database = await syncStorageLocalGet('AllBuildings');
-    database.splice(database.indexOf(buildingID), 1, mergeApartment(database, buildingID, building, apartmentID));
-    chrome.storage.local.set({ 'AllBuildings': database });
-}
-
-/**
- * Merge a single apartment and its parent building with the record in the database. Building data will be merged too
- * @param {*} database The database record  
- * @param {*} buildingID The building ID to merge
- * @param {*} building The building object with the new data
- * @param {*} apartmentID The apartment ID to merge
- * @returns The new combined object
- */
-function mergeApartment(database, buildingID, building, apartmentID) {
-    let combinedBuilding = database[buildingID];
-    combinedBuilding.status = building.status;
-    combinedBuilding.apartments.splice(combinedBuilding.apartments.indexOf(buildingID), 1, building.apartments[apartmentID]);
-    return combinedBuilding;
+async function saveBuilding(updatedBuilding) {
+    let database = await loadDatabase();
+    n_mergeIntoDatabase(updatedBuilding, database);
+    saveDatabase(database);
 }
 
 /**
  * Save the entire database as a JSon file
  */
 async function exportDatabase() {
-    let database = await syncStorageLocalGet('AllBuildings');
-    var _myArray = JSON.stringify(database, null, 4); //indentation in json format, human readable
+    let database = await loadDatabase();
+    var _myArray = JSON.stringify(database.coreData, null, 4); //indentation in json format, human readable
 
+    var d = new Date();
     var vLink = document.createElement('a'),
         vBlob = new Blob([_myArray], { type: "octet/stream" }),
-        vName = 'all_apartments.json',
+        vName = 'all_apartments_' + d.toJSON() + '.json',
         vUrl = window.URL.createObjectURL(vBlob);
     vLink.setAttribute('href', vUrl);
     vLink.setAttribute('download', vName);
     vLink.click();
+}
+
+/**
+ * Save the suumo ID map as a JSon file
+ */
+async function exportMap() {
+    let database = await loadDatabase();
+    var _myArray = JSON.stringify(Object.fromEntries(database.suumoIDMap), null, 4); //indentation in json format, human readable
+
+    var d = new Date();
+    var vLink = document.createElement('a'),
+        vBlob = new Blob([_myArray], { type: "octet/stream" }),
+        vName = 'all_apartments_map_' + d.toJSON() + '.json',
+        vUrl = window.URL.createObjectURL(vBlob);
+    vLink.setAttribute('href', vUrl);
+    vLink.setAttribute('download', vName);
+    vLink.click();
+}
+
+// PRIVATE =============================================================================================================
+
+/**
+ * Load the FullData object
+ * @returns The loaded FullData
+ */
+async function loadDatabase() {
+    let coreData = await syncStorageLocalGet("FullData_CoreData");
+    let suumoIDMap = await syncStorageLocalGet("FullData_SuumoIDMap");
+    let fullData = new FullData();
+    fullData.coreData = coreData;
+    fullData.suumoIDMap = new Map(Object.entries(suumoIDMap));
+    if (!n_validateDatabase(fullData)) {
+        throw "Core database is corrupt, reset needed";
+    }
+    return fullData;
+}
+
+/**
+ * Save the FullData object
+ * @param {FullData} database The database to save
+ */
+async function saveDatabase(database) {
+    if (!n_validateDatabase(database)) {
+        throw "Can't save corrupt database";
+    }
+    let saveData = Object.fromEntries(database.suumoIDMap);
+    chrome.storage.local.set({ "FullData_CoreData": database.coreData });
+    chrome.storage.local.set({ "FullData_SuumoIDMap": saveData });
 }

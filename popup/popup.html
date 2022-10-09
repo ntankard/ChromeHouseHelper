@@ -1,0 +1,82 @@
+<html>
+
+<head>
+    <style>
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+
+        .f-right {
+            float: right
+        }
+
+        .checkboxes label {
+            display: inline-block;
+            padding-right: 10px;
+            white-space: nowrap;
+        }
+
+        .checkboxes input {
+            vertical-align: middle;
+        }
+
+        .checkboxes label span {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="clearfix">
+        Page Type: <input class="f-right" id="pageType" disabled=true />
+    </div>
+    <div class="clearfix">
+        DataBase Status: <input class="f-right" id="databaseStatus" disabled=true />
+    </div>
+    <div class="clearfix">
+        Monthly: <input class="f-right" id="monthlyCost" disabled=true />
+    </div>
+    <div class="clearfix">
+        Move In: <input class="f-right" id="moveInCost" disabled=true />
+    </div>
+    <div class="clearfix">
+        Total Monthly: <input class="f-right" id="totalMonthlyCost" disabled=true />
+    </div>
+    <div class="clearfix">
+        Building Status: <input class="f-right" id="buildingStatus" disabled=true />
+    </div>
+    <div class="clearfix">
+        Apartment Status : <input class="f-right" id="apartmentStatus" disabled=true />
+    </div>
+
+    <!-- <div>
+        <fieldset style="margin-right: 0; margin-left: 0">
+          <legend>Remember:</legend>
+          <div class="checkboxes">
+            <label for="rememberText"><input type="checkbox" id="rememberText" /> <span>message</span></label>
+            <label for="rememberId"><input type="checkbox" id="rememberId" /> <span>room id</span></label>
+            <label for="rememberTime"><input type="checkbox" id="rememberTime" /> <span>time</span></label>
+          </div>
+        </fieldset>
+      </div> -->
+    <button style="width: 100%" id="btnReset">Reset</button>
+    <textarea id="commentText" cols="40" rows="10" placeholder="comments"></textarea>
+
+    <button style="width: 100%" id="btnSave" disabled=true>Save</button>
+    <button style="width: 30%" id="btnGood" disabled=true>Good</button>
+    <button style="width: 30%" id="btnBad" disabled=true>Bad</button>
+    <button style="width: 35%" id="btnBadBuilding" disabled=true>B_Building</button>
+    <button style="width: 100%" id="btnExport">Export</button>
+
+    <div style="font-style:italic" id="calTime"></div>
+    <script src="../utils/coreDataTypes.js" type="text/javascript"></script>
+    <script src="../utils/coreDataTypesUtil.js" type="text/javascript"></script>
+    <script src="../utils/generalUtils.js" type="text/javascript"></script>
+    <script src="../databaseUtil.js" type="text/javascript"></script>
+    <script src="popup.js" type="text/javascript"></script>
+</body>
+
+</html>
