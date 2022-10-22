@@ -4,7 +4,7 @@
  * @returns The numeric value
  */
 function parseMoney(value) {
-    var baseValue = value.replace("円", "");
+    var baseValue = value.replace("円", "").replace(",", "");
     if (baseValue.includes("万")) {
         baseValue = baseValue.replace("万", "") * 10000;
     }

@@ -2,6 +2,8 @@ class FullData {
     constructor() {
         this.coreData = [];
         this.suumoIDMap = new Map();
+        this.rntApartmentIDMap = new Map();
+        this.rntBuildingIDMap = new Map();
     }
 }
 
@@ -32,6 +34,8 @@ class Apartment {
 
         this.suumoBaseURL;
         this.suumoID;
+
+        this.rntID;
     }
 }
 
@@ -44,12 +48,20 @@ class Building {
         this.name;
         this.address;
         this.age;
+        this.constructionDate; // TODO 
         this.stories;
         this.stations = [];
         this.apartments = [];
 
         this.suumoName;
         this.suumoAddress;
+
+        this.rntName;
+        this.rntEnglishName;
+        this.rntAddress;
+        this.rntID;
+
+        this.googleMapLink;
     }
 }
 

@@ -36,8 +36,8 @@ function scrapeApartment() {
  * @returns The Building and Apartment details based on Apartment_2 page type
  */
 function getSuumoApartmentRoot() {
-    let building = new Building()
-    building.apartments[0] = new Apartment()
+    let building = new Building();
+    building.apartments[0] = new Apartment();
 
     // Name
     building.suumoName = document.getElementsByClassName("section_h1-header-title")[0].innerHTML;

@@ -37,10 +37,20 @@ function n_mergeIntoDatabase(updatedBuilding, database) {
     }
 
     // Update map if new data is present
+    if (toUpdate.rntID != null) {
+        if (!database.rntBuildingIDMap.has(toUpdate.rntID)) {
+            database.rntBuildingIDMap.set(toUpdate.rntID, { buildingID: toUpdate.databaseID });
+        }
+    }
     for (let apartment of toUpdate.apartments) {
         if (apartment.suumoID != null) {
             if (!database.suumoIDMap.has(apartment.suumoID)) {
                 database.suumoIDMap.set(apartment.suumoID, { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+            }
+        }
+        if (apartment.rntID != null) {
+            if (!database.rntApartmentIDMap.has(apartment.rntID)) {
+                database.rntApartmentIDMap.set(apartment.rntID, { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
             }
         }
     }
@@ -142,28 +152,59 @@ function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
  * @returns 
  */
 function n_validateDatabase(database) {
-    let mapCount = 0;
+    let suumoMapCount = 0;
+    let rntAMapCount = 0;
+    let rntBMapCount = 0;
     for (let i = 0; i < database.coreData.length; i++) {
         if (database.coreData[i].databaseID != i) {
+            // console.log("0");
             return false;
+        }
+        if (database.coreData[i].rntID != null) {
+            let mapResult = database.rntBuildingIDMap.get(database.coreData[i].rntID);
+            if ((mapResult == undefined) || (mapResult.buildingID != i)) {
+                // console.log("1");
+                return false;
+            }
+            rntBMapCount++;
         }
         for (let j = 0; j < database.coreData[i].apartments.length; j++) {
             if (database.coreData[i].apartments[j].databaseID != j) {
+                // console.log("2");
                 return false;
             }
             if (database.coreData[i].apartments[j].buildingDatabaseID != i) {
+                // console.log("3");
                 return false;
             }
             if (database.coreData[i].apartments[j].suumoID != null) {
                 let mapResult = database.suumoIDMap.get(database.coreData[i].apartments[j].suumoID);
                 if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
+                    // console.log("4");
                     return false;
                 }
-                mapCount++;
+                suumoMapCount++;
+            }
+            if (database.coreData[i].apartments[j].rntID != null) {
+                let mapResult = database.rntApartmentIDMap.get(database.coreData[i].apartments[j].rntID);
+                if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
+                    // console.log("5");
+                    return false;
+                }
+                rntAMapCount++;
             }
         }
     }
-    if (mapCount != database.suumoIDMap.size) {
+    if (suumoMapCount != database.suumoIDMap.size) {
+        // console.log("6");
+        return false;
+    }
+    if (rntAMapCount != database.rntApartmentIDMap.size) {
+        // console.log("7");
+        return false;
+    }
+    if (rntBMapCount != database.rntBuildingIDMap.size) {
+        // console.log("8");
         return false;
     }
     return true;
@@ -181,13 +222,33 @@ function n_findBuilding(nonStoredBuilding, database) {
         return database.coreData[nonStoredBuilding.databaseID];
     } else {
         // First attempt to find the match based on the unique IDs of the children
+        let foundID = -2;
+        let match = database.rntBuildingIDMap.get((nonStoredBuilding.rntID));
+        if (match != null) {
+            foundID = match.buildingID;
+        }
         for (let apartment of nonStoredBuilding.apartments) {
             if (apartment.suumoID) {
-                let match = database.suumoIDMap.get((apartment.suumoID));
+                match = null;
+                match = database.suumoIDMap.get((apartment.suumoID));
                 if (match != null) {
-                    return database.coreData[match.buildingID];
+                    if (foundID >= 0 && foundID != match.buildingID) {
+                        throw "Multiple suumo buildings found in 1 entry "
+                    }
+                    foundID = match.buildingID;
+                }
+                match = null;
+                match = database.rntApartmentIDMap.get((apartment.rnt));
+                if (match != null) {
+                    if (foundID >= 0 && foundID != match.buildingID) {
+                        throw "Multiple rnt buildings found in 1 entry "
+                    }
+                    foundID = match.buildingID;
                 }
             }
+        }
+        if (foundID >= 0) {
+            return database.coreData[foundID];
         }
     }
 

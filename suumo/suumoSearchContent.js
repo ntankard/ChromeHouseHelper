@@ -1,39 +1,26 @@
 
-// LOCAL DATA ==========================================================================================================
-
-let pageType = PAGE_TYPE_UNKNOWN;
-
-// MAIN CODE ===========================================================================================================
-
-if (document.getElementsByClassName("conditionbox").length != 0) {
-    pageType = PAGE_TYPE_APARTMENT;
-    loadSearchPage();
-}
-
-// Enable response to requests
-chrome.runtime.onMessage.addListener(gotMessage);
-
-// FUNCTIONS ===========================================================================================================
-
 /**
- * Process all income messages. Expects message.type to be present and can respond to getPageType and getApartment 
- * depending on the page type
- * @param {*} message 
- * @param {*} sender 
- * @param {*} sendResponse 
+ * Is this a search type page?
+ * @returns True if this a search type page?
  */
-function gotMessage(message, sender, sendResponse) {
-    switch (message.type) {
-        case REQUEST_PAGE_TYPE:
-            sendResponse(pageType);
-            break;
-    }
+function isSearchPage() {
+    return document.getElementsByClassName("conditionbox").length != 0;
 }
 
 /**
- * Process all search results and look for matches
+ * Get the number of apartment for this building
+ * @param {*} buildingIndex The building to get (matching the index as returned from getBuildings()) 
+ * @returns The number of apartments on the page
  */
-async function loadSearchPage() {
+function getNumApartments(buildingIndex) {
+    return document.getElementsByClassName("cassetteitem")[buildingIndex].getElementsByClassName("js-cassette_link").length;
+}
+
+/**
+ * Get all buildings on the page
+ * @returns All buildings
+ */
+function getBuildings() {
     let buildings = [];
     for (buildingContainer of document.getElementsByClassName("cassetteitem")) {
         let building = new Building();
@@ -73,36 +60,26 @@ async function loadSearchPage() {
             building.apartments.push(apartment);
         }
 
-        let totalResult = await findBuilding(building);
-        if (totalResult.building.databaseID != -1) {
-
-            // Process building color
-            if (totalResult.building.status == "BAD") {
-                buildingContainer.getElementsByClassName("cassetteitem-detail")[0].style['background-color'] = '#FF0000';
-            } else {
-                buildingContainer.getElementsByClassName("cassetteitem-detail")[0].style['background-color'] = '#FF9000';
-            }
-
-            // Process apartment color
-            let webApartments = buildingContainer.getElementsByClassName("js-cassette_link");
-            for (let i = 0; i < webApartments.length; i++) {
-                if (totalResult.apartmentMapping[i] != -1) {
-                    let apartmentMatch = totalResult.building.apartments[totalResult.apartmentMapping[i]];
-                    if (apartmentMatch.databaseID != -1) {
-                        if (apartmentMatch.status == "GOOD") {
-                            webApartments[i].style['background-color'] = '#00FF00';
-                        }
-                        if (apartmentMatch.status == "BAD") {
-                            webApartments[i].style['background-color'] = '#FF0000';
-                        }
-                    }
-                }
-            }
-        }
-
-
         buildings.push(building);
     }
+    return buildings;
+}
 
-    console.log(buildings);
+/**
+ * Shade a building listing a certain color
+ * @param {*} buildingIndex The building to color (matching the index as returned from getBuildings())
+ * @param {*} color The color to set
+ */
+function setBuildingColor(buildingIndex, color) {
+    document.getElementsByClassName("cassetteitem")[buildingIndex].getElementsByClassName("cassetteitem-detail")[0].style['background-color'] = color;
+}
+
+/**
+ * Shade a apartment listing a certain color
+ * @param {*} buildingIndex The building to color (matching the index as returned from getBuildings())
+ * @param {*} apartmentIndex The apartment to color (matching the index as returned from getBuildings())
+ * @param {*} color The color to set
+ */
+function setApartmentColor(buildingIndex, apartmentIndex, color) {
+    document.getElementsByClassName("cassetteitem")[buildingIndex].getElementsByClassName("js-cassette_link")[apartmentIndex].style['background-color'] = color;
 }

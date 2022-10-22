@@ -41,10 +41,6 @@ loadPopup();
  */
 function loadPopup() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        if (!tabs[0].url.includes('https://suumo.jp')) {
-            alert('please go to https://suumo.jp/');
-            return;
-        }
         findPageType(tabs);
     });
 }
@@ -212,6 +208,8 @@ function badBuildingAction() {
 function exportAction() {
     exportDatabase();
     // exportMap();
+    // exportRntApartmentMap();
+    // exportRntBuildingMap();
 }
 
 /**

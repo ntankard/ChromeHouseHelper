@@ -33,7 +33,34 @@
                 "utils/generalUtils.js",
                 "suumo/suumoUtils.js",
                 "databaseUtil.js",
-                "suumo/searchContent.js"
+                "suumo/suumoSearchContent.js",
+                "content/searchContent.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://www.rnt.co.jp/*search/*"
+            ],
+            "js": [
+                "utils/coreDataTypes.js",
+                "utils/coreDataTypesUtil.js",
+                "utils/generalUtils.js",
+                "databaseUtil.js",
+                "rnt/rntSearchContent.js",
+                "content/searchContent.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://www.rnt.co.jp/room/*"
+            ],
+            "js": [
+                "utils/coreDataTypes.js",
+                "utils/coreDataTypesUtil.js",
+                "utils/generalUtils.js",
+                "databaseUtil.js",
+                "rnt/rntApartmentScrape.js",
+                "content/apartmentContent.js"
             ]
         }
     ],

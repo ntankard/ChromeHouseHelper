@@ -34,11 +34,17 @@ function makeDatabase(buildings) {
     database.coreData = buildings;
     for (let i = 0; i < database.coreData.length; i++) {
         database.coreData[i].databaseID = i;
+        if (database.coreData[i].rntID != null) {
+            database.rntBuildingIDMap.set(database.coreData[i].rntID, { buildingID: i });
+        }
         for (let j = 0; j < database.coreData[i].apartments.length; j++) {
             database.coreData[i].apartments[j].databaseID = j;
             database.coreData[i].apartments[j].buildingDatabaseID = i;
             if (database.coreData[i].apartments[j].suumoID != null) {
                 database.suumoIDMap.set(database.coreData[i].apartments[j].suumoID, { buildingID: i, apartmentID: j });
+            }
+            if (database.coreData[i].apartments[j].rntID != null) {
+                database.rntApartmentIDMap.set(database.coreData[i].apartments[j].rntID, { buildingID: i, apartmentID: j });
             }
         }
     }
@@ -533,6 +539,11 @@ test("n_findBuilding", () => {
     testBuilding.stories = 5;
     result = DatabaseUtil.n_findBuilding(testBuilding, database);
     expect(result).toBe(null);
+
+    // TODO here we should keep searching to check for a conflicting building ID. This happens if the data on the product page does not  match for 2 entries
+    // https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&ta=11&sc=11101&cb=0.0&ct=9999999&et=9999999&cn=9999999&mb=0&mt=9999999&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1
+    // https://suumo.jp/chintai/jnc_000073855175/?bc=100294679086
+    // TODO add case where 1 building has multiple suumo ID in the map
 })
 
 test("n_compareFullBuilding", () => {
