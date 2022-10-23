@@ -1,4 +1,3 @@
-
 /**
  * Is this a search type page?
  * @returns True if this a search type page?
@@ -24,11 +23,18 @@ function getBuildings() {
     let buildings = [];
     for (buildingContainer of document.getElementsByClassName("cassetteitem")) {
         let building = new Building();
+        // building.IDs[SITE_SUUMO] NA for this site
+        building.siteType = SITE_SUUMO;
 
         building.name = buildingContainer.getElementsByClassName("cassetteitem_content-title")[0].innerHTML.replace(/[0-9]/g, '');
         building.address = buildingContainer.getElementsByClassName("cassetteitem_detail-col1")[0].innerHTML;
-        building.age = extractAge(buildingContainer.getElementsByClassName("cassetteitem_detail-col3")[0].firstElementChild.innerHTML.replace("築", "").replace("年", ""));
+        // building.englishName NA for this site
+
+        // building.googleMapLink NA for this site
         building.stories = parseInt(buildingContainer.getElementsByClassName("cassetteitem_detail-col3")[0].lastElementChild.innerHTML.replace("階建", ""));
+
+        building.age = extractAge(buildingContainer.getElementsByClassName("cassetteitem_detail-col3")[0].firstElementChild.innerHTML.replace("築", "").replace("年", ""));
+        // building.constructionDate NA for this site
 
         for (station of buildingContainer.getElementsByClassName("cassetteitem_detail-col2")[0].getElementsByClassName("cassetteitem_detail-text")) {
             let createdStation = extractStation(station.innerHTML);
@@ -38,26 +44,25 @@ function getBuildings() {
         }
 
         for (apartmentContainer of buildingContainer.getElementsByClassName("js-cassette_link")) {
+            let url = "https://suumo.jp" + apartmentContainer.getElementsByClassName("ui-text--midium ui-text--bold")[0].children[0].getAttribute("href").split("?")[0];
+            let urlResult = processSuumoURL(url);
+
             let apartment = new Apartment();
+            apartment.IDs[SITE_SUUMO] = String(urlResult.suumoID);
 
             apartment.price = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--rent")[0].children[0].innerHTML);
-            apartment.managementFee = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--administration")[0].innerHTML);
             apartment.floor = parseInt(apartmentContainer.children[2].innerHTML.replace("階", "").replace("\n\t\t\t\t\t\t\t\t\t\t\t", ""));
             apartment.deposit = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--deposit")[0].innerHTML);
             apartment.keyMoney = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--gratuity")[0].innerHTML);
-
             apartment.layout = apartmentContainer.getElementsByClassName("cassetteitem_madori")[0].innerHTML;
             apartment.size = parseFloat(apartmentContainer.getElementsByClassName("cassetteitem_menseki")[0].innerHTML.replace("m<sup>2</sup>", ""));
 
-            // Get URL link
-            let url = "https://suumo.jp" + apartmentContainer.getElementsByClassName("ui-text--midium ui-text--bold")[0].children[0].getAttribute("href").split("?")[0];
-            let urlResult = processSuumoURL(url);
+            apartment.managementFee = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--administration")[0].innerHTML);
+
             apartment.urls[SITE_SUUMO] = urlResult.baseURL;
-            apartment.IDs[SITE_SUUMO] = String(urlResult.suumoID);
 
             building.apartments.push(apartment);
         }
-
         buildings.push(building);
     }
     return buildings;

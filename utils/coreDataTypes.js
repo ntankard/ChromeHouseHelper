@@ -13,52 +13,69 @@ class FullData {
 
 class Station {
     constructor() {
+        // Database core
         this.databaseID = -1;
 
+        // Fuzzy data
+        this.distance;
+
+        // Hard data
         this.line;
         this.station;
-        this.distance;
     }
 }
 
 class Apartment {
     constructor() {
+        // Database core
         this.databaseID = -1;
+        this.IDs = Array(10);
 
-        this.status;
-
+        // Hard data
         this.price;
-        this.managementFee;
         this.floor;
         this.deposit;
         this.keyMoney;
         this.layout;
         this.size;
 
+        // Fuzzy data
+        this.managementFee;
+
+        // Sub Objects
         this.urls = Array(10);
-        this.IDs = Array(10);
+
+        // User data
+        this.status;
     }
 }
 
 class Building {
     constructor() {
+        // Database core
         this.databaseID = -1;
+        this.IDs = Array(10);
+        this.siteType;
 
-        this.status;
-
+        // Fuzzy data
         this.name;
         this.address;
-        this.age;
-        this.constructionDate; // TODO 
+        this.englishName;
+
+        // Hard data
+        this.googleMapLink;
         this.stories;
+
+        // Multi form data
+        this.age;
+        this.constructionDate;
+
+        // Sub Objects
         this.stations = [];
         this.apartments = [];
 
-        this.englishName;
-       
-        this.googleMapLink;
-
-        this.IDs = Array(10);
+        // User data
+        this.status;
     }
 }
 
