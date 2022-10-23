@@ -1,9 +1,13 @@
+const MAX_SITE_NUM = 10;
+
+const SITE_SUUMO = 0;
+const SITE_RNT = 1;
+
 class FullData {
     constructor() {
         this.coreData = [];
-        this.suumoIDMap = new Map();
-        this.rntApartmentIDMap = new Map();
-        this.rntBuildingIDMap = new Map();
+        this.apartmentIDMaps = Array.apply(null, Array(MAX_SITE_NUM)).map(x => new Map());
+        this.buildingIDMaps = Array.apply(null, Array(MAX_SITE_NUM)).map(x => new Map());
     }
 }
 
@@ -20,7 +24,6 @@ class Station {
 class Apartment {
     constructor() {
         this.databaseID = -1;
-        this.buildingDatabaseID = -1;
 
         this.status;
 
@@ -32,10 +35,8 @@ class Apartment {
         this.layout;
         this.size;
 
-        this.suumoBaseURL;
-        this.suumoID;
-
-        this.rntID;
+        this.urls = Array(10);
+        this.IDs = Array(10);
     }
 }
 
@@ -53,15 +54,11 @@ class Building {
         this.stations = [];
         this.apartments = [];
 
-        this.suumoName;
-        this.suumoAddress;
-
-        this.rntName;
-        this.rntEnglishName;
-        this.rntAddress;
-        this.rntID;
-
+        this.englishName;
+       
         this.googleMapLink;
+
+        this.IDs = Array(10);
     }
 }
 
@@ -81,5 +78,7 @@ if (typeof require === 'function') {
         Station: Station,
         Apartment: Apartment,
         Building: Building,
+        SITE_SUUMO: SITE_SUUMO,
+        SITE_RNT: SITE_RNT,
     };
 }

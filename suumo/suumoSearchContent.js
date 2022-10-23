@@ -25,10 +25,8 @@ function getBuildings() {
     for (buildingContainer of document.getElementsByClassName("cassetteitem")) {
         let building = new Building();
 
-        building.suumoName = buildingContainer.getElementsByClassName("cassetteitem_content-title")[0].innerHTML;
-        building.name = building.suumoName.replace(/[0-9]/g, '');
-        building.suumoAddress = buildingContainer.getElementsByClassName("cassetteitem_detail-col1")[0].innerHTML;
-        building.address = building.suumoAddress;
+        building.name = buildingContainer.getElementsByClassName("cassetteitem_content-title")[0].innerHTML.replace(/[0-9]/g, '');
+        building.address = buildingContainer.getElementsByClassName("cassetteitem_detail-col1")[0].innerHTML;
         building.age = extractAge(buildingContainer.getElementsByClassName("cassetteitem_detail-col3")[0].firstElementChild.innerHTML.replace("築", "").replace("年", ""));
         building.stories = parseInt(buildingContainer.getElementsByClassName("cassetteitem_detail-col3")[0].lastElementChild.innerHTML.replace("階建", ""));
 
@@ -54,8 +52,8 @@ function getBuildings() {
             // Get URL link
             let url = "https://suumo.jp" + apartmentContainer.getElementsByClassName("ui-text--midium ui-text--bold")[0].children[0].getAttribute("href").split("?")[0];
             let urlResult = processSuumoURL(url);
-            apartment.suumoBaseURL = urlResult.baseURL;
-            apartment.suumoID = urlResult.suumoID;
+            apartment.urls[SITE_SUUMO] = urlResult.baseURL;
+            apartment.IDs[SITE_SUUMO] = String(urlResult.suumoID);
 
             building.apartments.push(apartment);
         }

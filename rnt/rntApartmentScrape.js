@@ -9,10 +9,8 @@ function scrapeApartment() {
     let detailList = document.getElementsByClassName("detail-list")[0];
 
     // Base Building Info
-    building.rntName = detailList.children[1].children[0].innerHTML;
-    building.name = building.rntName;
-    building.rntAddress = detailList.children[5].innerHTML.replace("\n\t\t\t\t\t", "").replace("\t\t\t\t\t", " ").replace("\t\t\n\t\t\t\t", "");
-    building.address = building.rntAddress;
+    building.name = detailList.children[1].children[0].innerHTML;
+    building.address = detailList.children[5].innerHTML.replace("\n\t\t\t\t\t", "").replace("\t\t\t\t\t", " ").replace("\t\t\n\t\t\t\t", "");
     building.constructionDate = {
         year: parseInt(detailList.children[15].innerHTML.split("年")[0]),
         month: parseInt(detailList.children[15].innerHTML.split("年")[1].replace("月", ""))
@@ -31,8 +29,8 @@ function scrapeApartment() {
     }
 
     // RNT specific info
-    building.rntID = String(detailList.children[1].children[0].getAttribute("href").split("/")[3]);
-    building.rntEnglishName = document.getElementsByClassName("boxMainHeader detail-header")[0].getElementsByClassName("sub-header")[0].innerHTML.split(" (")[0];
+    building.IDs[SITE_RNT] = String(detailList.children[1].children[0].getAttribute("href").split("/")[3]);
+    building.englishName = document.getElementsByClassName("boxMainHeader detail-header")[0].getElementsByClassName("sub-header")[0].innerHTML.split(" (")[0];
     // googleMapLink NA on this page
 
     // Apartment Info
@@ -48,7 +46,7 @@ function scrapeApartment() {
     }
     building.apartments[0].layout = detailBox[4].children[1].innerHTML.split("/")[0].replace("&nbsp;", "")
     building.apartments[0].size = parseFloat(detailBox[4].children[1].innerHTML.split("/")[1].replace("&nbsp;", "").replace("m²", ""));
-    building.apartments[0].rntID = String(parseInt(document.location.href.split("/")[5]));
+    building.apartments[0].IDs[SITE_RNT] = String(parseInt(document.location.href.split("/")[5]));
 
     return building;
 }

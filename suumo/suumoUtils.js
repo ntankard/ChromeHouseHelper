@@ -70,7 +70,7 @@ function processSuumoURL(url) {
 
     return {
         baseURL: baseUrl,
-        suumoID: aptId,
+        suumoID: String(aptId),
         aptType: aptType,
     };
 }

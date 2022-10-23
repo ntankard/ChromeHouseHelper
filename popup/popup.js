@@ -158,8 +158,8 @@ function populateData() {
         //maximumFractionDigits: 0, // (causes 2500.99 to be printed as $2,501)
     });
 
-    console.log(building);
-    console.log(apartmentID);
+    console.log("Building: " + building);
+    console.log("Apartment: " + apartmentID);
 
     if (building.databaseID == -1) {
         databaseStatus.value = "NEW BUILDING";
@@ -207,9 +207,8 @@ function badBuildingAction() {
  */
 function exportAction() {
     exportDatabase();
-    // exportMap();
-    // exportRntApartmentMap();
-    // exportRntBuildingMap();
+    // exportApartmentMap();
+    // exportBuildingMap();
 }
 
 /**

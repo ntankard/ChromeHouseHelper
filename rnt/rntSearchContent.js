@@ -24,17 +24,15 @@ function getBuildings() {
     for (buildingContainer of document.getElementsByClassName("boxBuildingList")) {
         let building = new Building();
 
-        building.rntName = buildingContainer.getElementsByClassName("heading heading-dark lg-heading-big")[0].children[0].innerHTML;
-        building.name = building.rntName;
+        building.name = buildingContainer.getElementsByClassName("heading heading-dark lg-heading-big")[0].children[0].innerHTML;
 
-        building.rntEnglishName = buildingContainer.getElementsByClassName("sub-heading sub-heading-gray")[0].innerHTML.split(" (")[0];
+        building.englishName = buildingContainer.getElementsByClassName("sub-heading sub-heading-gray")[0].innerHTML.split(" (")[0];
 
-        building.rntID = String(buildingContainer.getElementsByClassName("heading heading-dark lg-heading-big")[0].children[0].getAttribute("href").split("/")[3]);
+        building.IDs[SITE_RNT] = String(buildingContainer.getElementsByClassName("heading heading-dark lg-heading-big")[0].children[0].getAttribute("href").split("/")[3]);
 
         let buildingInfo = buildingContainer.getElementsByClassName("building-list-data")[0];
 
-        building.rntAddress = buildingInfo.children[3].childNodes[0].data.replace("\n\t\t\t\t\t\t", "").replace("\t\t\t\t\t\t（", "").replace("\t\t\t\t\t\t", " ");
-        building.address = building.rntAddress;
+        building.address = buildingInfo.children[3].childNodes[0].data.replace("\n\t\t\t\t\t\t", "").replace("\t\t\t\t\t\t（", "").replace("\t\t\t\t\t\t", " ");
 
         building.googleMapLink = buildingInfo.children[3].childNodes[1].getAttribute("href");
 
@@ -56,7 +54,7 @@ function getBuildings() {
         for (apartmentContainer of buildingContainer.getElementsByClassName("room-list-item")) {
             let apartment = new Apartment();
 
-            apartment.rntID = String(apartmentContainer.children[0].getAttribute("href").split("/")[3]);
+            apartment.IDs[SITE_RNT] = String(apartmentContainer.children[0].getAttribute("href").split("/")[3]);
 
             let data = apartmentContainer.children[0].getElementsByClassName("room-list-content-block");
 

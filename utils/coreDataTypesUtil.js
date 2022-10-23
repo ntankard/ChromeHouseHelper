@@ -5,6 +5,9 @@ const SIMILARLY_TYPE_POSSIBLE_MATCH = 2; // Enough attributes are the same that 
 const SIMILARLY_TYPE_COMPATIBLE = 1; // The attributes could below to the same object but there is not enough data to determine a match
 const SIMILARLY_TYPE_MISMATCH = 0; // At least 1 attribute is different in an incompatible way 
 
+const SITE_SUUMO = 0;
+const SITE_RNT = 1;
+
 // PUBLIC ==============================================================================================================
 
 function n_mergeIntoDatabase(updatedBuilding, database) {
@@ -33,24 +36,23 @@ function n_mergeIntoDatabase(updatedBuilding, database) {
             throw "Database corruption";
         }
         toUpdate.apartments[i].databaseID = i;
-        toUpdate.apartments[i].buildingDatabaseID = toUpdate.databaseID;
     }
 
     // Update map if new data is present
-    if (toUpdate.rntID != null) {
-        if (!database.rntBuildingIDMap.has(toUpdate.rntID)) {
-            database.rntBuildingIDMap.set(toUpdate.rntID, { buildingID: toUpdate.databaseID });
+    if (toUpdate.IDs[SITE_RNT] != null) {
+        if (!database.buildingIDMaps[SITE_RNT].has(toUpdate.IDs[SITE_RNT])) {
+            database.buildingIDMaps[SITE_RNT].set(toUpdate.IDs[SITE_RNT], { buildingID: toUpdate.databaseID });
         }
     }
     for (let apartment of toUpdate.apartments) {
-        if (apartment.suumoID != null) {
-            if (!database.suumoIDMap.has(apartment.suumoID)) {
-                database.suumoIDMap.set(apartment.suumoID, { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+        if (apartment.IDs[SITE_SUUMO] != null) {
+            if (!database.apartmentIDMaps[SITE_SUUMO].has(apartment.IDs[SITE_SUUMO])) {
+                database.apartmentIDMaps[SITE_SUUMO].set(apartment.IDs[SITE_SUUMO], { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
             }
         }
-        if (apartment.rntID != null) {
-            if (!database.rntApartmentIDMap.has(apartment.rntID)) {
-                database.rntApartmentIDMap.set(apartment.rntID, { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+        if (apartment.IDs[SITE_RNT] != null) {
+            if (!database.apartmentIDMaps[SITE_RNT].has(apartment.IDs[SITE_RNT])) {
+                database.apartmentIDMaps[SITE_RNT].set(apartment.IDs[SITE_RNT], { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
             }
         }
     }
@@ -89,12 +91,6 @@ function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
     }
     if (storedBuilding.stories == null) {
         storedBuilding.stories = nonStoredBuilding.stories;
-    }
-    if (storedBuilding.suumoName == null) {
-        storedBuilding.suumoName = nonStoredBuilding.suumoName;
-    }
-    if (storedBuilding.suumoAddress == null) {
-        storedBuilding.suumoAddress = nonStoredBuilding.suumoAddress;
     }
 
     let matchIDs = Array(nonStoredBuilding.apartments.length).fill(-1);
@@ -160,8 +156,8 @@ function n_validateDatabase(database) {
             // console.log("0");
             return false;
         }
-        if (database.coreData[i].rntID != null) {
-            let mapResult = database.rntBuildingIDMap.get(database.coreData[i].rntID);
+        if (database.coreData[i].IDs[SITE_RNT] != null) {
+            let mapResult = database.buildingIDMaps[SITE_RNT].get(database.coreData[i].IDs[SITE_RNT]);
             if ((mapResult == undefined) || (mapResult.buildingID != i)) {
                 // console.log("1");
                 return false;
@@ -173,20 +169,16 @@ function n_validateDatabase(database) {
                 // console.log("2");
                 return false;
             }
-            if (database.coreData[i].apartments[j].buildingDatabaseID != i) {
-                // console.log("3");
-                return false;
-            }
-            if (database.coreData[i].apartments[j].suumoID != null) {
-                let mapResult = database.suumoIDMap.get(database.coreData[i].apartments[j].suumoID);
+            if (database.coreData[i].apartments[j].IDs[SITE_SUUMO] != null) {
+                let mapResult = database.apartmentIDMaps[SITE_SUUMO].get(database.coreData[i].apartments[j].IDs[SITE_SUUMO]);
                 if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
                     // console.log("4");
                     return false;
                 }
                 suumoMapCount++;
             }
-            if (database.coreData[i].apartments[j].rntID != null) {
-                let mapResult = database.rntApartmentIDMap.get(database.coreData[i].apartments[j].rntID);
+            if (database.coreData[i].apartments[j].IDs[SITE_RNT] != null) {
+                let mapResult = database.apartmentIDMaps[SITE_RNT].get(database.coreData[i].apartments[j].IDs[SITE_RNT]);
                 if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
                     // console.log("5");
                     return false;
@@ -195,15 +187,15 @@ function n_validateDatabase(database) {
             }
         }
     }
-    if (suumoMapCount != database.suumoIDMap.size) {
+    if (suumoMapCount != database.apartmentIDMaps[SITE_SUUMO].size) {
         // console.log("6");
         return false;
     }
-    if (rntAMapCount != database.rntApartmentIDMap.size) {
+    if (rntAMapCount != database.apartmentIDMaps[SITE_RNT].size) {
         // console.log("7");
         return false;
     }
-    if (rntBMapCount != database.rntBuildingIDMap.size) {
+    if (rntBMapCount != database.buildingIDMaps[SITE_RNT].size) {
         // console.log("8");
         return false;
     }
@@ -223,14 +215,14 @@ function n_findBuilding(nonStoredBuilding, database) {
     } else {
         // First attempt to find the match based on the unique IDs of the children
         let foundID = -2;
-        let match = database.rntBuildingIDMap.get((nonStoredBuilding.rntID));
+        let match = database.buildingIDMaps[SITE_RNT].get((nonStoredBuilding.IDs[SITE_RNT]));
         if (match != null) {
             foundID = match.buildingID;
         }
         for (let apartment of nonStoredBuilding.apartments) {
-            if (apartment.suumoID) {
+            if (apartment.IDs[SITE_SUUMO]) {
                 match = null;
-                match = database.suumoIDMap.get((apartment.suumoID));
+                match = database.apartmentIDMaps[SITE_SUUMO].get((apartment.IDs[SITE_SUUMO]));
                 if (match != null) {
                     if (foundID >= 0 && foundID != match.buildingID) {
                         throw "Multiple suumo buildings found in 1 entry "
@@ -238,7 +230,7 @@ function n_findBuilding(nonStoredBuilding, database) {
                     foundID = match.buildingID;
                 }
                 match = null;
-                match = database.rntApartmentIDMap.get((apartment.rnt));
+                match = database.apartmentIDMaps[SITE_RNT].get((apartment.rnt));
                 if (match != null) {
                     if (foundID >= 0 && foundID != match.buildingID) {
                         throw "Multiple rnt buildings found in 1 entry "
@@ -391,13 +383,12 @@ function n_compareBuilding(storedBuilding, nonStoredBuilding) {
     // Compare attributes that have complex matching parameters (TODO check this better)
     n_compareAttribute(storedBuilding.name, nonStoredBuilding.name, attResult);
     n_compareAttribute(storedBuilding.address, nonStoredBuilding.address, attResult);
-    n_compareAttribute(storedBuilding.suumoName, nonStoredBuilding.suumoName, attResult);
+    // n_compareAttribute(storedBuilding.suumoName, nonStoredBuilding.suumoName, attResult); // TODO
 
     // Compare base attributes (TODO this is not perfect atm)
     attResult.mismatch = false;
     n_compareAttribute(storedBuilding.age, nonStoredBuilding.age, attResult);
     n_compareAttribute(storedBuilding.stories, nonStoredBuilding.stories, attResult);
-    n_compareAttribute(storedBuilding.suumoAddress, nonStoredBuilding.suumoAddress, attResult);
 
     let matchIDs = Array(nonStoredBuilding.stations.length).fill(-1);
     let usedIDs = [];
@@ -411,15 +402,16 @@ function n_compareBuilding(storedBuilding, nonStoredBuilding) {
         };
     }
 
-    if (storedBuilding.suumoName != null && storedBuilding.suumoAddress != null
-        && nonStoredBuilding.suumoName != null && nonStoredBuilding.suumoAddress != null
-        && (nonStoredBuilding.suumoName == storedBuilding.suumoName)
-        && (nonStoredBuilding.suumoAddress == storedBuilding.suumoAddress)) {
-        return {
-            similarity: SIMILARLY_TYPE_POSSIBLE_MATCH,
-            identical: attResult.allIdentical && stationResult.identical
-        };
-    }
+    // TODO
+    // if (storedBuilding.suumoName != null && storedBuilding.suumoAddress != null
+    //     && nonStoredBuilding.suumoName != null && nonStoredBuilding.suumoAddress != null
+    //     && (nonStoredBuilding.suumoName == storedBuilding.suumoName)
+    //     && (nonStoredBuilding.suumoAddress == storedBuilding.suumoAddress)) {
+    //     return {
+    //         similarity: SIMILARLY_TYPE_POSSIBLE_MATCH,
+    //         identical: attResult.allIdentical && stationResult.identical
+    //     };
+    // }
 
     // TODO this failed and tests did not catch it
     if (storedBuilding.name != null && storedBuilding.address != null
@@ -526,11 +518,11 @@ function n_mergeApartment(storedApartment, nonStoredApartment) {
     if (storedApartment.size == null) {
         storedApartment.size = nonStoredApartment.size;
     }
-    if (storedApartment.suumoBaseURL == null) {
-        storedApartment.suumoBaseURL = nonStoredApartment.suumoBaseURL;
+    if (storedApartment.urls[SITE_SUUMO] == null) {
+        storedApartment.urls[SITE_SUUMO] = nonStoredApartment.urls[SITE_SUUMO];
     }
-    if (storedApartment.suumoID == null) {
-        storedApartment.suumoID = nonStoredApartment.suumoID;
+    if (storedApartment.IDs[SITE_SUUMO] == null) {
+        storedApartment.IDs[SITE_SUUMO] = nonStoredApartment.IDs[SITE_SUUMO];
     }
 }
 
@@ -559,11 +551,12 @@ function n_compareApartment(storedApartments, nonStoredApartments) {
     n_compareAttribute(storedApartments.keyMoney, nonStoredApartments.keyMoney, attResult);
     n_compareAttribute(storedApartments.layout, nonStoredApartments.layout, attResult);
     n_compareAttribute(storedApartments.size, nonStoredApartments.size, attResult);
-    n_compareAttribute(storedApartments.suumoBaseURL, nonStoredApartments.suumoBaseURL, attResult);
+    n_compareAttribute(storedApartments.urls[SITE_SUUMO], nonStoredApartments.urls[SITE_SUUMO], attResult); // TODO needs to be redone
 
     // Compare IDs
     attResult.anyNotNullIdentical = false;
-    n_compareAttribute(storedApartments.suumoID, nonStoredApartments.suumoID, attResult);
+    // TODO needs to be redone
+    n_compareAttribute(storedApartments.IDs[SITE_SUUMO], nonStoredApartments.IDs[SITE_SUUMO], attResult);
 
     // ID match
     if (attResult.anyNotNullIdentical) {
@@ -626,6 +619,32 @@ function n_compareAttribute(att1, att2, attResult) {
     }
 }
 
+/**
+ * Convert an array of maps into a savable format
+ * @param {*} IDMap The array to convert
+ * @returns The savable version
+ */
+function n_idMapsToJson(IDMap) {
+    let jsonArray = [];
+    for (let i = 0; i < 10; i++) {
+        jsonArray.push(Object.fromEntries(IDMap[i]));
+    }
+    return jsonArray;
+}
+
+/**
+ * Create an array of Maps from savable data
+ * @param {*} jsonArray The saveable data to convert 
+ * @returns The usable array of maps
+ */
+function n_jsonToIDMaps(jsonArray) {
+    let IDMap = [];
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+        IDMap.push(new Map(Object.entries(jsonArray[i])));
+    }
+    return IDMap;
+}
+
 if (typeof require === 'function') {
     module.exports = {
         n_mergeIntoDatabase: n_mergeIntoDatabase,
@@ -639,6 +658,8 @@ if (typeof require === 'function') {
         n_mergeApartment: n_mergeApartment,
         n_compareApartment: n_compareApartment,
         n_compareAttribute: n_compareAttribute,
+        n_idMapsToJson: n_idMapsToJson,
+        n_jsonToIDMaps: n_jsonToIDMaps,
         SIMILARLY_TYPE_ID_MATCH: SIMILARLY_TYPE_ID_MATCH,
         SIMILARLY_TYPE_POSSIBLE_MATCH: SIMILARLY_TYPE_POSSIBLE_MATCH,
         SIMILARLY_TYPE_COMPATIBLE: SIMILARLY_TYPE_COMPATIBLE,

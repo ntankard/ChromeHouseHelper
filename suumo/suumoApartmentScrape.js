@@ -25,8 +25,8 @@ function scrapeApartment() {
             break;
     }
 
-    building.apartments[0].suumoBaseURL = result.baseURL;
-    building.apartments[0].suumoID = result.suumoID;
+    building.apartments[0].urls[SITE_SUUMO] = result.baseURL;
+    building.apartments[0].IDs[SITE_SUUMO] = String(result.suumoID);
 
     return building;
 }
@@ -40,8 +40,7 @@ function getSuumoApartmentRoot() {
     building.apartments[0] = new Apartment();
 
     // Name
-    building.suumoName = document.getElementsByClassName("section_h1-header-title")[0].innerHTML;
-    building.name = building.suumoName.replace(/[0-9]/g, '');
+    building.name = document.getElementsByClassName("section_h1-header-title")[0].innerHTML.replace(/[0-9]/g, '');
 
     // Price data
     let topRow = document.getElementsByClassName("property_view_note-info")[0].children[0];
@@ -53,8 +52,7 @@ function getSuumoApartmentRoot() {
 
     // Table section
     let dataSection = document.getElementsByClassName("property_view_table")[0]
-    building.suumoAddress = dataSection.children[0].children[0].getElementsByClassName("property_view_table-body")[0].innerHTML;
-    building.address = building.suumoAddress;
+    building.address = dataSection.children[0].children[0].getElementsByClassName("property_view_table-body")[0].innerHTML;
     for (station of dataSection.children[0].children[1].getElementsByClassName("property_view_table-body")[0].getElementsByClassName("property_view_table-read")) {
         let createdStation = extractStation(station.innerHTML);
         if (createdStation) {

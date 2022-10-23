@@ -1,3 +1,4 @@
+const { SITE_RNT, SITE_SUUMO } = require('./../utils/coreDataTypes');
 const Types = require('./../utils/coreDataTypes');
 const { n_validateDatabase, n_mergeIntoDatabase } = require('./../utils/coreDataTypesUtil');
 const DatabaseUtil = require('./../utils/coreDataTypesUtil');
@@ -34,17 +35,16 @@ function makeDatabase(buildings) {
     database.coreData = buildings;
     for (let i = 0; i < database.coreData.length; i++) {
         database.coreData[i].databaseID = i;
-        if (database.coreData[i].rntID != null) {
-            database.rntBuildingIDMap.set(database.coreData[i].rntID, { buildingID: i });
+        if (database.coreData[i].IDs[SITE_RNT] != null) {
+            database.buildingIDMaps[Types.SITE_RNT].set(database.coreData[i].IDs[SITE_RNT], { buildingID: i });
         }
         for (let j = 0; j < database.coreData[i].apartments.length; j++) {
             database.coreData[i].apartments[j].databaseID = j;
-            database.coreData[i].apartments[j].buildingDatabaseID = i;
-            if (database.coreData[i].apartments[j].suumoID != null) {
-                database.suumoIDMap.set(database.coreData[i].apartments[j].suumoID, { buildingID: i, apartmentID: j });
+            if (database.coreData[i].apartments[j].IDs[SITE_SUUMO] != null) {
+                database.apartmentIDMaps[Types.SITE_SUUMO].set(database.coreData[i].apartments[j].IDs[SITE_SUUMO], { buildingID: i, apartmentID: j });
             }
-            if (database.coreData[i].apartments[j].rntID != null) {
-                database.rntApartmentIDMap.set(database.coreData[i].apartments[j].rntID, { buildingID: i, apartmentID: j });
+            if (database.coreData[i].apartments[j].IDs[SITE_RNT] != null) {
+                database.apartmentIDMaps[Types.SITE_RNT].set(database.coreData[i].apartments[j].IDs[SITE_RNT], { buildingID: i, apartmentID: j });
             }
         }
     }
@@ -133,24 +133,24 @@ test("n_mergeIntoDatabase", () => {
     buildings[1].apartments.push(new Types.Apartment());
     database = makeDatabase(buildings);
     building = JSON.parse(JSON.stringify(database.coreData[1]));
-    building.apartments[0].suumoID = 123;
-    expect(database.coreData[1].apartments[0].suumoID).toBe(undefined);
+    building.apartments[0].IDs[SITE_SUUMO] = String(123);
+    expect(database.coreData[1].apartments[0].IDs[SITE_SUUMO]).toBe(undefined);
     n_mergeIntoDatabase(building, database);
-    expect(database.coreData[1].apartments[0].suumoID).toBe(123);
+    expect(database.coreData[1].apartments[0].IDs[SITE_SUUMO]).toBe(String(123));
     expect(n_validateDatabase(database)).toBe(true);
 
     database = makeDatabase([]);
     building = new Types.Building()
     building.apartments.push(new Types.Apartment());
-    building.apartments[0].suumoID = 123;
+    building.apartments[0].IDs[SITE_SUUMO] = String(123);
     n_mergeIntoDatabase(building, database);
-    expect(database.coreData[0].apartments[0].suumoID).toBe(123);
+    expect(database.coreData[0].apartments[0].IDs[SITE_SUUMO]).toBe(String(123));
     expect(n_validateDatabase(database)).toBe(true);
 
     database = makeDatabase([]);
     building = new Types.Building();
     building.apartments.push(new Types.Apartment());
-    building.apartments[0].suumoID = 123;
+    building.apartments[0].IDs[SITE_SUUMO] = String(123);
     building.statements = generateTestStations(1);
     n_mergeIntoDatabase(building, database);
     expect(n_validateDatabase(database)).toBe(true);
@@ -159,7 +159,7 @@ test("n_mergeIntoDatabase", () => {
     building = new Types.Building();
     building.databaseID = 0;
     building.apartments.push(new Types.Apartment());
-    building.apartments[0].suumoID = 124;
+    building.apartments[0].IDs[SITE_SUUMO] = String(124);
     building.statements = generateTestStations(1);
     n_mergeIntoDatabase(building, database);
     expect(n_validateDatabase(database)).toBe(true);
@@ -267,8 +267,8 @@ test("n_mergeBuilding", () => {
     nonStored = new Types.Building();
     store.apartments = generateTestApartments(4);
     nonStored.apartments = generateTestApartments(5);
-    store.apartments[2].suumoID = 255;
-    nonStored.apartments[3].suumoID = 255;
+    store.apartments[2].IDs[SITE_SUUMO] = String(255);
+    nonStored.apartments[3].IDs[SITE_SUUMO] = String(255);
     nonStored.apartments[3].price = 500;
     expect(store.apartments[2].price).toBe(undefined);
     DatabaseUtil.n_mergeBuilding(store, nonStored);
@@ -279,11 +279,11 @@ test("n_mergeBuilding", () => {
     nonStored = new Types.Building();
     store.apartments = generateTestApartments(4);
     nonStored.apartments = generateTestApartments(5);
-    store.apartments[2].suumoID = 255;
-    nonStored.apartments[3].suumoID = 255;
+    store.apartments[2].IDs[SITE_SUUMO] = String(255);
+    nonStored.apartments[3].IDs[SITE_SUUMO] = String(255);
     nonStored.apartments[3].price = 500;
-    store.apartments[0].suumoID = 66;
-    nonStored.apartments[0].suumoID = 66;
+    store.apartments[0].IDs[SITE_SUUMO] = String(66);
+    nonStored.apartments[0].IDs[SITE_SUUMO] = String(66);
     nonStored.apartments[0].floor = 2;
     expect(store.apartments[2].price).toBe(undefined);
     DatabaseUtil.n_mergeBuilding(store, nonStored);
@@ -295,9 +295,9 @@ test("n_mergeBuilding", () => {
     nonStored = new Types.Building();
     store.apartments = generateTestApartments(4);
     nonStored.apartments = generateTestApartments(5);
-    store.apartments[2].suumoID = 255;
+    store.apartments[2].IDs[SITE_SUUMO] = String(255);
     store.apartments[2].price = 600;
-    nonStored.apartments[3].suumoID = 255;
+    nonStored.apartments[3].IDs[SITE_SUUMO] = String(255);
     nonStored.apartments[3].price = 500;
     expect(() => DatabaseUtil.n_mergeBuilding(store, nonStored)).toThrow("An ID matched apartment has mismatching data");
 
@@ -372,87 +372,77 @@ test("n_validateDatabase", () => {
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     database = makeDatabase(buildings);
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(true);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 500;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(500);
     database = makeDatabase(buildings);
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
     database = makeDatabase(buildings);
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     database = makeDatabase(buildings);
-    database.suumoIDMap.set(500, { buildingID: 0, apartmentID: 0 });
+    database.apartmentIDMaps[Types.SITE_SUUMO].set(String(500), { buildingID: 0, apartmentID: 0 });
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     database = makeDatabase(buildings);
-    database.suumoIDMap.delete(500);
+    database.apartmentIDMaps[Types.SITE_SUUMO].delete(String(500));
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     database = makeDatabase(buildings);
     buildings[1].apartments = generateTestApartments(2);
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     database = makeDatabase(buildings);
     buildings[0].apartments[0].databaseID = 100;
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
+    buildings[0].apartments[0].IDs[SITE_SUUMO] = String(400);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
-    database = makeDatabase(buildings);
-    buildings[0].apartments[0].buildingDatabaseID = 100;
-    expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
-
-    buildings = generateTestBuildings(3);
-    buildings[0].apartments = generateTestApartments(1);
-    buildings[0].apartments[0].suumoID = 400;
-    buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[1].suumoID = 500;
-    buildings[2].apartments[3].suumoID = 600;
+    buildings[2].apartments[1].IDs[SITE_SUUMO] = String(500);
+    buildings[2].apartments[3].IDs[SITE_SUUMO] = String(600);
     database = makeDatabase(buildings);
     buildings[0].databaseID = 100;
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
@@ -490,52 +480,54 @@ test("n_findBuilding", () => {
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[2].apartments[0].suumoID = 300;
+    buildings[2].apartments[0].IDs[SITE_SUUMO] = String(300);
     database = makeDatabase(buildings);
     testBuilding = new Types.Building();
     testBuilding.apartments = generateTestApartments(2);
-    testBuilding.apartments[0].suumoID = 300;
+    testBuilding.apartments[0].IDs[SITE_SUUMO] = String(300);
     result = DatabaseUtil.n_findBuilding(testBuilding, database);
     expect(result.databaseID).toBe(2);
     expect(result).toBe(buildings[2]);
 
-    buildings = generateTestBuildings(3);
-    buildings[0].apartments = generateTestApartments(1);
-    buildings[2].apartments = generateTestApartments(4);
-    buildings[1].suumoName = "Test";
-    buildings[1].suumoAddress = "Test2";
-    database = makeDatabase(buildings);
-    testBuilding = new Types.Building();
-    testBuilding.suumoName = "Test";
-    testBuilding.suumoAddress = "Test2";
-    result = DatabaseUtil.n_findBuilding(testBuilding, database);
-    expect(result.databaseID).toBe(1);
-    expect(result).toBe(buildings[1]);
+    // TODO
+    // buildings = generateTestBuildings(3);
+    // buildings[0].apartments = generateTestApartments(1);
+    // buildings[2].apartments = generateTestApartments(4);
+    // buildings[1].name = "Test";
+    // buildings[1].address = "Test2";
+    // database = makeDatabase(buildings);
+    // testBuilding = new Types.Building();
+    // testBuilding.name = "Test";
+    // testBuilding.address = "Test2";
+    // result = DatabaseUtil.n_findBuilding(testBuilding, database);
+    // expect(result.databaseID).toBe(1);
+    // expect(result).toBe(buildings[1]);
+
+    // TODO
+    // buildings = generateTestBuildings(3);
+    // buildings[0].apartments = generateTestApartments(1);
+    // buildings[2].apartments = generateTestApartments(4);
+    // buildings[1].name = "Test";
+    // buildings[1].address = "Test2";
+    // database = makeDatabase(buildings);
+    // testBuilding = new Types.Building();
+    // testBuilding.name = "Test";
+    // testBuilding.address = "Test2";
+    // testBuilding.stories = 5;
+    // result = DatabaseUtil.n_findBuilding(testBuilding, database);
+    // expect(result.databaseID).toBe(1);
+    // expect(result).toBe(buildings[1]);
 
     buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
     buildings[2].apartments = generateTestApartments(4);
-    buildings[1].suumoName = "Test";
-    buildings[1].suumoAddress = "Test2";
-    database = makeDatabase(buildings);
-    testBuilding = new Types.Building();
-    testBuilding.suumoName = "Test";
-    testBuilding.suumoAddress = "Test2";
-    testBuilding.stories = 5;
-    result = DatabaseUtil.n_findBuilding(testBuilding, database);
-    expect(result.databaseID).toBe(1);
-    expect(result).toBe(buildings[1]);
-
-    buildings = generateTestBuildings(3);
-    buildings[0].apartments = generateTestApartments(1);
-    buildings[2].apartments = generateTestApartments(4);
-    buildings[1].suumoName = "Test";
-    buildings[1].suumoAddress = "Test2";
+    buildings[1].name = "Test";
+    buildings[1].address = "Test2";
     buildings[1].stories = 6;
     database = makeDatabase(buildings);
     testBuilding = new Types.Building();
-    testBuilding.suumoName = "Test";
-    testBuilding.suumoAddress = "Test2";
+    testBuilding.name = "Test";
+    testBuilding.address = "Test2";
     testBuilding.stories = 5;
     result = DatabaseUtil.n_findBuilding(testBuilding, database);
     expect(result).toBe(null);
@@ -567,8 +559,8 @@ test("n_compareFullBuilding", () => {
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(4);
     storedBuilding.apartments = generateTestApartments(4);
-    nonStoredBuilding.apartments[1].suumoID = 10;
-    storedBuilding.apartments[3].suumoID = 10;
+    nonStoredBuilding.apartments[1].IDs[SITE_SUUMO] = String(10);
+    storedBuilding.apartments[3].IDs[SITE_SUUMO] = String(10);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
 
     nonStoredBuilding = new Types.Building();
@@ -576,49 +568,49 @@ test("n_compareFullBuilding", () => {
     nonStoredBuilding.apartments = generateTestApartments(2);
     storedBuilding.apartments = generateTestApartments(4);
     nonStoredBuilding.stories = 4;
-    nonStoredBuilding.apartments[1].suumoID = 10;
+    nonStoredBuilding.apartments[1].IDs[SITE_SUUMO] = String(10);
     storedBuilding.stories = 5;
-    storedBuilding.apartments[3].suumoID = 10;
+    storedBuilding.apartments[3].IDs[SITE_SUUMO] = String(10);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_MISMATCH, identical: false });
 
     nonStoredBuilding = new Types.Building();
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(2);
     storedBuilding.apartments = generateTestApartments(4);
-    nonStoredBuilding.suumoName = "123 f";
-    nonStoredBuilding.suumoAddress = "123 f";
-    storedBuilding.suumoName = "123 f";
-    storedBuilding.suumoAddress = "123 f";
+    nonStoredBuilding.name = "123 f";
+    nonStoredBuilding.address = "123 f";
+    storedBuilding.name = "123 f";
+    storedBuilding.address = "123 f";
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: false });
 
     nonStoredBuilding = new Types.Building();
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(2);
     storedBuilding.apartments = generateTestApartments(2);
-    nonStoredBuilding.apartments[0].suumoID = 5;
-    nonStoredBuilding.apartments[1].suumoID = 51;
-    storedBuilding.apartments[0].suumoID = 5;
-    storedBuilding.apartments[1].suumoID = 51;
+    nonStoredBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
+    nonStoredBuilding.apartments[1].IDs[SITE_SUUMO] = String(51);
+    storedBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
+    storedBuilding.apartments[1].IDs[SITE_SUUMO] = String(51);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: true });
 
     nonStoredBuilding = new Types.Building();
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(3);
     storedBuilding.apartments = generateTestApartments(2);
-    nonStoredBuilding.apartments[0].suumoID = 5;
-    nonStoredBuilding.apartments[1].suumoID = 51;
-    storedBuilding.apartments[0].suumoID = 5;
-    storedBuilding.apartments[1].suumoID = 51;
+    nonStoredBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
+    nonStoredBuilding.apartments[1].IDs[SITE_SUUMO] = String(51);
+    storedBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
+    storedBuilding.apartments[1].IDs[SITE_SUUMO] = String(51);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
 
     nonStoredBuilding = new Types.Building();
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(2);
     storedBuilding.apartments = generateTestApartments(3);
-    nonStoredBuilding.apartments[0].suumoID = 5;
-    nonStoredBuilding.apartments[1].suumoID = 51;
-    storedBuilding.apartments[0].suumoID = 5;
-    storedBuilding.apartments[1].suumoID = 51;
+    nonStoredBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
+    nonStoredBuilding.apartments[1].IDs[SITE_SUUMO] = String(51);
+    storedBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
+    storedBuilding.apartments[1].IDs[SITE_SUUMO] = String(51);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
 
     nonStoredBuilding = new Types.Building();
@@ -662,14 +654,14 @@ test("n_compareFullBuilding", () => {
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(2);
     storedBuilding.apartments = generateTestApartments(3);
-    nonStoredBuilding.apartments[0].suumoID = 5;
+    nonStoredBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 
     nonStoredBuilding = new Types.Building();
     storedBuilding = new Types.Building();
     nonStoredBuilding.apartments = generateTestApartments(2);
     storedBuilding.apartments = generateTestApartments(3);
-    storedBuilding.apartments[0].suumoID = 5;
+    storedBuilding.apartments[0].IDs[SITE_SUUMO] = String(5);
     expect(DatabaseUtil.n_compareFullBuilding(storedBuilding, nonStoredBuilding)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 })
 
@@ -703,8 +695,8 @@ test("n_findApartmentMappingLevel", () => {
     storedApartments = generateTestApartments(8);
     matchIDs = Array(nonStoredApartments.length).fill(-1);
     usedIDs = [];
-    nonStoredApartments[3].suumoID = 10;
-    storedApartments[1].suumoID = 10;
+    nonStoredApartments[3].IDs[SITE_SUUMO] = String(10);
+    storedApartments[1].IDs[SITE_SUUMO] = String(10);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(6);
     for (id of matchIDs) {
@@ -720,8 +712,8 @@ test("n_findApartmentMappingLevel", () => {
     storedApartments = generateTestApartments(8);
     matchIDs = Array(nonStoredApartments.length).fill(-1);
     usedIDs = [];
-    nonStoredApartments[1].suumoID = 10;
-    storedApartments[5].suumoID = 10;
+    nonStoredApartments[1].IDs[SITE_SUUMO] = String(10);
+    storedApartments[5].IDs[SITE_SUUMO] = String(10);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(6);
     for (id of matchIDs) {
@@ -737,10 +729,10 @@ test("n_findApartmentMappingLevel", () => {
     storedApartments = generateTestApartments(8);
     matchIDs = Array(nonStoredApartments.length).fill(-1);
     usedIDs = [];
-    nonStoredApartments[1].suumoID = 10;
-    storedApartments[5].suumoID = 10;
-    nonStoredApartments[3].suumoID = 20;
-    storedApartments[1].suumoID = 20;
+    nonStoredApartments[1].IDs[SITE_SUUMO] = String(10);
+    storedApartments[5].IDs[SITE_SUUMO] = String(10);
+    nonStoredApartments[3].IDs[SITE_SUUMO] = String(20);
+    storedApartments[1].IDs[SITE_SUUMO] = String(20);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(6);
     for (id of matchIDs) {
@@ -782,11 +774,11 @@ test("n_findApartmentMappingLevel", () => {
     nonStoredApartments[1].price = 10;
     nonStoredApartments[1].layout = "1LDK";
     nonStoredApartments[1].size = 25.1;
-    nonStoredApartments[1].suumoID = 20;
+    nonStoredApartments[1].IDs[SITE_SUUMO] = String(20);
     storedApartments[3].price = 10;
     storedApartments[3].layout = "1LDK";
     storedApartments[3].size = 25.1;
-    storedApartments[5].suumoID = 20;
+    storedApartments[5].IDs[SITE_SUUMO] = String(20);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(8);
     for (id of matchIDs) {
@@ -805,11 +797,11 @@ test("n_findApartmentMappingLevel", () => {
     nonStoredApartments[1].price = 10;
     nonStoredApartments[1].layout = "1LDK";
     nonStoredApartments[1].size = 25.1;
-    nonStoredApartments[1].suumoID = 20;
+    nonStoredApartments[1].IDs[SITE_SUUMO] = String(20);
     storedApartments[5].price = 10;
     storedApartments[5].layout = "1LDK";
     storedApartments[5].size = 25.1;
-    storedApartments[3].suumoID = 20;
+    storedApartments[3].IDs[SITE_SUUMO] = String(20);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(6);
     for (id of matchIDs) {
@@ -828,14 +820,14 @@ test("n_findApartmentMappingLevel", () => {
     nonStoredApartments[1].price = 10;
     nonStoredApartments[1].layout = "1LDK";
     nonStoredApartments[1].size = 25.1;
-    nonStoredApartments[1].suumoID = 20;
+    nonStoredApartments[1].IDs[SITE_SUUMO] = String(20);
     nonStoredApartments[3].price = 10;
     nonStoredApartments[3].layout = "1LDK";
     nonStoredApartments[3].size = 25.1;
     storedApartments[5].price = 10;
     storedApartments[5].layout = "1LDK";
     storedApartments[5].size = 25.1;
-    storedApartments[5].suumoID = 20;
+    storedApartments[5].IDs[SITE_SUUMO] = String(20);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(6);
     for (id of matchIDs) {
@@ -854,14 +846,14 @@ test("n_findApartmentMappingLevel", () => {
     nonStoredApartments[3].price = 10;
     nonStoredApartments[3].layout = "1LDK";
     nonStoredApartments[3].size = 25.1;
-    nonStoredApartments[3].suumoID = 20;
+    nonStoredApartments[3].IDs[SITE_SUUMO] = String(20);
     nonStoredApartments[1].price = 10;
     nonStoredApartments[1].layout = "1LDK";
     nonStoredApartments[1].size = 25.1;
     storedApartments[5].price = 10;
     storedApartments[5].layout = "1LDK";
     storedApartments[5].size = 25.1;
-    storedApartments[5].suumoID = 20;
+    storedApartments[5].IDs[SITE_SUUMO] = String(20);
     expect(DatabaseUtil.n_findApartmentMappingLevel(storedApartments, nonStoredApartments, DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, matchIDs, usedIDs)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: false });
     expect(usedIDs.length).toBe(6);
     for (id of matchIDs) {
@@ -1024,38 +1016,39 @@ test("n_compareBuilding", () => {
     bu_a.stories = 5;
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 
-    bu_b.suumoName = "test";
+    bu_b.name = "test";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 
-    bu_a.suumoName = "test";
+    bu_a.name = "test";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 
-    bu_b.suumoAddress = "123 f";
+    bu_b.address = "123 f";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 
-    bu_a.suumoAddress = "123 f";
+    bu_a.address = "123 f";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: false });
 
-    bu_a.suumoAddress = "123 fa";
-    expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_MISMATCH, identical: false });
+    // TODO
+    // bu_a.address = "123 fa";
+    // expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_MISMATCH, identical: false });
 
-    bu_a.suumoAddress = "123 f";
+    bu_a.address = "123 f";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: false });
 
     bu_a = new Types.Building();
     bu_b = new Types.Building();
-    bu_a.suumoName = "name";
-    bu_a.suumoAddress = "123 f";
-    bu_b.suumoName = "name";
-    bu_b.suumoAddress = "123 f";
+    bu_a.name = "name";
+    bu_a.address = "123 f";
+    bu_b.name = "name";
+    bu_b.address = "123 f";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: true });
 
     bu_a = new Types.Building();
     bu_b = new Types.Building();
-    bu_a.suumoName = "name";
-    bu_a.suumoAddress = "123 f";
-    bu_b.suumoName = "name";
-    bu_b.suumoAddress = "123 f";
+    bu_a.name = "name";
+    bu_a.address = "123 f";
+    bu_b.name = "name";
+    bu_b.address = "123 f";
     expect(DatabaseUtil.n_compareBuilding(bu_a, bu_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_POSSIBLE_MATCH, identical: true });
 
     bu_a = new Types.Building();
@@ -1202,20 +1195,6 @@ test("n_mergeApartment", () => {
 
     store = new Types.Apartment();
     nonStored = new Types.Apartment();
-    nonStored.buildingDatabaseID = 500;
-    DatabaseUtil.n_mergeApartment(store, nonStored)
-    expect(store.buildingDatabaseID).toBe(-1);
-    expect(nonStored.buildingDatabaseID).toBe(500);
-
-    store = new Types.Apartment();
-    nonStored = new Types.Apartment();
-    store.buildingDatabaseID = 500;
-    DatabaseUtil.n_mergeApartment(store, nonStored)
-    expect(store.buildingDatabaseID).toBe(500);
-    expect(nonStored.buildingDatabaseID).toBe(-1);
-
-    store = new Types.Apartment();
-    nonStored = new Types.Apartment();
     store.status = "TEST";
     DatabaseUtil.n_mergeApartment(store, nonStored)
     expect(store.status).toBe("TEST");
@@ -1251,13 +1230,13 @@ test("n_compareApartment", () => {
     app_a.databaseID = -1;
     expect(DatabaseUtil.n_compareApartment(app_a, app_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: true });
 
-    app_a.suumoID = 5;
+    app_a.IDs[SITE_SUUMO] = String(5);
     expect(DatabaseUtil.n_compareApartment(app_a, app_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_COMPATIBLE, identical: false });
 
-    app_b.suumoID = 6;
+    app_b.IDs[SITE_SUUMO] = String(6);
     expect(DatabaseUtil.n_compareApartment(app_a, app_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_MISMATCH, identical: false });
 
-    app_b.suumoID = 5;
+    app_b.IDs[SITE_SUUMO] = String(5);
     expect(DatabaseUtil.n_compareApartment(app_a, app_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_ID_MATCH, identical: true });
 
     app_b.price = 500;
@@ -1266,8 +1245,8 @@ test("n_compareApartment", () => {
     app_a.price = 400;
     expect(() => DatabaseUtil.n_compareApartment(app_a, app_b)).toThrow("An ID matched apartment has mismatching data");
 
-    app_a.suumoID = null;
-    app_b.suumoID = null;
+    app_a.IDs[SITE_SUUMO] = null;
+    app_b.IDs[SITE_SUUMO] = null;
     expect(DatabaseUtil.n_compareApartment(app_a, app_b)).toStrictEqual({ similarity: DatabaseUtil.SIMILARLY_TYPE_MISMATCH, identical: false });
 
     app_b.price = 400;
@@ -1644,4 +1623,18 @@ test("n_compareAttribute_apartment_int_individual", () => {
     expect(attResult.allIdentical).toBe(false);
     expect(attResult.mismatch).toBe(true);
     expect(attResult.anyNotNullIdentical).toBe(true);
+})
+
+test("n_idMapsToJson", () => {
+    let database = new Types.FullData();
+    database.apartmentIDMaps[2].set("234", { buildingID: 9, apartmentID: 15 });
+    database.apartmentIDMaps[2].set("aaa", { buildingID: 2, apartmentID: 3 });
+
+    let jsonArray = DatabaseUtil.n_idMapsToJson(database.apartmentIDMaps);
+    let IDMap = DatabaseUtil.n_jsonToIDMaps(jsonArray);
+
+    expect(IDMap[2].get("234").buildingID).toBe(9);
+    expect(IDMap[2].get("234").apartmentID).toBe(15);
+    expect(IDMap[2].get("aaa").buildingID).toBe(2);
+    expect(IDMap[2].get("aaa").apartmentID).toBe(3);
 })
