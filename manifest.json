@@ -88,6 +88,32 @@
                 "homes/homesApartmentScrape.js",
                 "content/apartmentContent.js"
             ]
+        },
+        {
+            "matches": [
+                "https://rent.tokyu-housing-lease.co.jp/rent_search/*"
+            ],
+            "js": [
+                "utils/coreDataTypes.js",
+                "utils/coreDataTypesUtil.js",
+                "utils/generalUtils.js",
+                "databaseUtil.js",
+                "tokyu/tokyuSearchContent.js",
+                "content/searchContent.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://rent.tokyu-housing-lease.co.jp/rent/*/*"
+            ],
+            "js": [
+                "utils/coreDataTypes.js",
+                "utils/coreDataTypesUtil.js",
+                "utils/generalUtils.js",
+                "databaseUtil.js",
+                "tokyu/tokyuApartmentScrape.js",
+                "content/apartmentContent.js"
+            ]
         }
     ],
     "permissions": [

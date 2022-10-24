@@ -34,6 +34,7 @@ function gotMessage(message, sender, sendResponse) {
  */
 async function loadSearchPage() {
     let buildings = getBuildings();
+    console.log(buildings);
 
     for (let buildingIndex = 0; buildingIndex < buildings.length; buildingIndex++) {
 
