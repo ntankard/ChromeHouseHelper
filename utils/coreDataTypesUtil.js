@@ -487,7 +487,7 @@ function n_compareBuilding(storedBuilding, nonStoredBuilding) {
 
     // Compare IDs
     attResult.anyNotNullIdentical = false;
-    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
         n_compareAttribute(storedBuilding.IDs[i], nonStoredBuilding.IDs[i], attResult);
     }
 
@@ -593,7 +593,7 @@ function n_mergeApartment(storedApartment, nonStoredApartment) {
     }
 
     // Only set if the core data is missing
-    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
         if (storedApartment.IDs[i] == null) {
             storedApartment.IDs[i] = nonStoredApartment.IDs[i];
         }
@@ -619,7 +619,7 @@ function n_mergeApartment(storedApartment, nonStoredApartment) {
     if (storedApartment.managementFee == null) {
         storedApartment.managementFee = nonStoredApartment.managementFee;
     }
-    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
         if (storedApartment.urls[i] == null) {
             storedApartment.urls[i] = nonStoredApartment.urls[i];
         }
@@ -652,13 +652,13 @@ function n_compareApartment(storedApartments, nonStoredApartments) {
     n_compareAttribute(storedApartments.size, nonStoredApartments.size, attResult);
     n_compareAttribute(storedApartments.managementFee, nonStoredApartments.managementFee, attResult);
 
-    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
         n_compareAttribute(storedApartments.urls[i], nonStoredApartments.urls[i], attResult);
     }
 
     // Compare IDs
     attResult.anyNotNullIdentical = false;
-    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
         n_compareAttribute(storedApartments.IDs[i], nonStoredApartments.IDs[i], attResult);
     }
 

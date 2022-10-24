@@ -207,8 +207,8 @@ function badBuildingAction() {
  */
 function exportAction() {
     exportDatabase();
-    // exportApartmentMap();
-    // exportBuildingMap();
+    exportApartmentMap();
+    exportBuildingMap();
 }
 
 /**

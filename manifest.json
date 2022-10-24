@@ -62,6 +62,32 @@
                 "rnt/rntApartmentScrape.js",
                 "content/apartmentContent.js"
             ]
+        },
+        {
+            "matches": [
+                "https://www.homes.co.jp/*list/*"
+            ],
+            "js": [
+                "utils/coreDataTypes.js",
+                "utils/coreDataTypesUtil.js",
+                "utils/generalUtils.js",
+                "databaseUtil.js",
+                "homes/homesSearchContent.js",
+                "content/searchContent.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://www.homes.co.jp/*room/*"
+            ],
+            "js": [
+                "utils/coreDataTypes.js",
+                "utils/coreDataTypesUtil.js",
+                "utils/generalUtils.js",
+                "databaseUtil.js",
+                "homes/homesApartmentScrape.js",
+                "content/apartmentContent.js"
+            ]
         }
     ],
     "permissions": [

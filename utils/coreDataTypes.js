@@ -2,6 +2,7 @@ const MAX_SITE_NUM = 10;
 
 const SITE_SUUMO = 0;
 const SITE_RNT = 1;
+const SITE_HOMES = 2;
 
 class FullData {
     constructor() {
