@@ -4,6 +4,8 @@
 let saveBtn = document.getElementById('btnSave');
 let goodBtn = document.getElementById('btnGood');
 let badBtn = document.getElementById('btnBad');
+let visitedBtn = document.getElementById('btnVisited');
+let naBtn = document.getElementById('btnNA');
 let badBuildingBtn = document.getElementById('btnBadBuilding');
 let exportBtn = document.getElementById('btnExport');
 let resetBtn = document.getElementById('btnReset');
@@ -128,10 +130,14 @@ async function loadApartment(tabs) {
         // Attach listeners
         goodBtn.addEventListener('click', goodAction);
         badBtn.addEventListener('click', badAction);
+        visitedBtn.addEventListener('click', visitedAction);
+        naBtn.addEventListener('click', naAction);
         badBuildingBtn.addEventListener('click', badBuildingAction);
 
         goodBtn.disabled = false;
         badBtn.disabled = false;
+        visitedBtn.disabled = false;
+        naBtn.disabled = false;
         badBuildingBtn.disabled = false;
 
     } else {
@@ -191,6 +197,22 @@ function goodAction() {
  */
 function badAction() {
     building.apartments[apartmentID].status = "BAD";
+    updateRecord();
+}
+
+/**
+ * visitedAction action listener
+ */
+ function visitedAction() {
+    building.apartments[apartmentID].status = "VISITED";
+    updateRecord();
+}
+
+/**
+ * naAction action listener
+ */
+function naAction() {
+    building.apartments[apartmentID].status = "NOT_AVAILABLE";
     updateRecord();
 }
 

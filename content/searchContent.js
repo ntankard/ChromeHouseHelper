@@ -57,10 +57,16 @@ async function loadSearchPage() {
                     let apartmentMatch = totalResult.building.apartments[totalResult.apartmentMapping[i]];
                     if (apartmentMatch.databaseID != -1) {
                         if (apartmentMatch.status == "GOOD") {
-                            setApartmentColor(buildingIndex, i, '#00FF00');
+                            setApartmentColor(buildingIndex, i, '#aee6bd');
                         }
                         if (apartmentMatch.status == "BAD") {
-                            setApartmentColor(buildingIndex, i, '#FF0000');
+                            setApartmentColor(buildingIndex, i, '#edd29f');
+                        }
+                        if (apartmentMatch.status == "VISITED") {
+                            setApartmentColor(buildingIndex, i, '#ccb7eb');
+                        }
+                        if (apartmentMatch.status == "NOT_AVAILABLE") {
+                            setApartmentColor(buildingIndex, i, '#f0adad');
                         }
                     }
                 }
