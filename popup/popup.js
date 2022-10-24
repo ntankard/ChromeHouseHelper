@@ -216,7 +216,7 @@ function exportAction() {
  */
 function resetAction() {
     try {
-        exportDatabase();
+        expertAll();
     } catch (e) {
 
     }

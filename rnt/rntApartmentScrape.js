@@ -19,10 +19,8 @@ function scrapeApartment() {
     building.stories = parseInt(detailList.children[17].innerHTML.replace("地上 ", "").replace("階", ""));
 
     // building.age NA for this site
-    building.constructionDate = {
-        year: parseInt(detailList.children[15].innerHTML.split("年")[0]),
-        month: parseInt(detailList.children[15].innerHTML.split("年")[1].replace("月", ""))
-    }
+    building.constructionDateYear = parseInt(detailList.children[15].innerHTML.split("年")[0]);
+    building.constructionDateMonth = parseInt(detailList.children[15].innerHTML.split("年")[1].replace("月", ""));
 
     for (stationContainer of detailList.children[7].children[0].children) {
         let station = new Station();
@@ -49,7 +47,6 @@ function scrapeApartment() {
     }
     building.apartments[0].layout = detailBox[4].children[1].innerHTML.split("/")[0].replace("&nbsp;", "")
     building.apartments[0].size = parseFloat(detailBox[4].children[1].innerHTML.split("/")[1].replace("&nbsp;", "").replace("m²", ""));
-
     building.apartments[0].managementFee = parseMoney(detailBox[1].children[1].innerHTML);
 
     // building.urls TODO

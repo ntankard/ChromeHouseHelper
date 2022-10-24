@@ -56,7 +56,6 @@ function getBuildings() {
             apartment.keyMoney = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--gratuity")[0].innerHTML);
             apartment.layout = apartmentContainer.getElementsByClassName("cassetteitem_madori")[0].innerHTML;
             apartment.size = parseFloat(apartmentContainer.getElementsByClassName("cassetteitem_menseki")[0].innerHTML.replace("m<sup>2</sup>", ""));
-
             apartment.managementFee = parseMoney(apartmentContainer.getElementsByClassName("cassetteitem_price cassetteitem_price--administration")[0].innerHTML);
 
             apartment.urls[SITE_SUUMO] = urlResult.baseURL;

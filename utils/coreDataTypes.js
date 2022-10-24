@@ -38,8 +38,6 @@ class Apartment {
         this.keyMoney;
         this.layout;
         this.size;
-
-        // Fuzzy data
         this.managementFee;
 
         // Sub Objects
@@ -68,7 +66,8 @@ class Building {
 
         // Multi form data
         this.age;
-        this.constructionDate;
+        this.constructionDateMonth;
+        this.constructionDateYear;
 
         // Sub Objects
         this.stations = [];

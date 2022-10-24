@@ -71,7 +71,6 @@ function getSuumoApartmentRoot() {
     building.apartments[0].keyMoney = parseMoney(bottomRow.children[1].innerHTML.replace("礼金:&nbsp;", ""));
     building.apartments[0].layout = dataSection.children[0].children[2].children[1].innerHTML;
     building.apartments[0].size = parseFloat(dataSection.children[0].children[2].children[3].innerHTML.replace("m<sup>2</sup>", ""));
-
     building.apartments[0].managementFee = parseMoney(topRow.children[1].innerHTML.replace("管理費・共益費:&nbsp;", ""));
 
     // building.apartments[0].urls Done above

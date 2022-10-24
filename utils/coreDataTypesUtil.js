@@ -5,11 +5,13 @@ const SIMILARLY_TYPE_POSSIBLE_MATCH = 2; // Enough attributes are the same that 
 const SIMILARLY_TYPE_COMPATIBLE = 1; // The attributes could below to the same object but there is not enough data to determine a match
 const SIMILARLY_TYPE_MISMATCH = 0; // At least 1 attribute is different in an incompatible way 
 
-const SITE_SUUMO = 0;
-const SITE_RNT = 1;
-
 // PUBLIC ==============================================================================================================
 
+/**
+ * Put this building into the database. Either add it as a new entry or update and existing one
+ * @param {*} updatedBuilding The building to add
+ * @param {*} database The existing database
+ */
 function n_mergeIntoDatabase(updatedBuilding, database) {
     // New Building
     let toUpdate;
@@ -38,21 +40,22 @@ function n_mergeIntoDatabase(updatedBuilding, database) {
         toUpdate.apartments[i].databaseID = i;
     }
 
-    // Update map if new data is present
-    if (toUpdate.IDs[SITE_RNT] != null) {
-        if (!database.buildingIDMaps[SITE_RNT].has(toUpdate.IDs[SITE_RNT])) {
-            database.buildingIDMaps[SITE_RNT].set(toUpdate.IDs[SITE_RNT], { buildingID: toUpdate.databaseID });
-        }
-    }
-    for (let apartment of toUpdate.apartments) {
-        if (apartment.IDs[SITE_SUUMO] != null) {
-            if (!database.apartmentIDMaps[SITE_SUUMO].has(apartment.IDs[SITE_SUUMO])) {
-                database.apartmentIDMaps[SITE_SUUMO].set(apartment.IDs[SITE_SUUMO], { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+    // Update building map
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+        if (toUpdate.IDs[i] != null) {
+            if (!database.buildingIDMaps[i].has(toUpdate.IDs[i])) {
+                database.buildingIDMaps[i].set(toUpdate.IDs[i], { buildingID: toUpdate.databaseID });
             }
         }
-        if (apartment.IDs[SITE_RNT] != null) {
-            if (!database.apartmentIDMaps[SITE_RNT].has(apartment.IDs[SITE_RNT])) {
-                database.apartmentIDMaps[SITE_RNT].set(apartment.IDs[SITE_RNT], { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+    }
+
+    // Update apartment map
+    for (let apartment of toUpdate.apartments) {
+        for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+            if (apartment.IDs[i] != null) {
+                if (!database.apartmentIDMaps[i].has(apartment.IDs[i])) {
+                    database.apartmentIDMaps[i].set(apartment.IDs[i], { buildingID: toUpdate.databaseID, apartmentID: apartment.databaseID });
+                }
             }
         }
     }
@@ -76,23 +79,45 @@ function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
         throw "Trying to merge incompatible buildings";
     }
 
-    if (nonStoredBuilding.status != null) {
-        storedBuilding.status = nonStoredBuilding.status;
-    }
-
     if (storedBuilding.name == null) {
         storedBuilding.name = nonStoredBuilding.name;
     }
     if (storedBuilding.address == null) {
         storedBuilding.address = nonStoredBuilding.address;
     }
-    if (storedBuilding.age == null) {
-        storedBuilding.age = nonStoredBuilding.age;
+    if (storedBuilding.englishName == null) {
+        storedBuilding.englishName = nonStoredBuilding.englishName;
+    }
+
+    if (storedBuilding.googleMapLink == null) {
+        storedBuilding.googleMapLink = nonStoredBuilding.googleMapLink;
     }
     if (storedBuilding.stories == null) {
         storedBuilding.stories = nonStoredBuilding.stories;
     }
 
+    // TODO might want a smarter merge here
+    if (storedBuilding.age == null) {
+        storedBuilding.age = nonStoredBuilding.age;
+    }
+    if (storedBuilding.constructionDateYear == null) {
+        storedBuilding.constructionDateYear = nonStoredBuilding.constructionDateYear;
+    }
+    if (storedBuilding.constructionDateMonth == null) {
+        storedBuilding.constructionDateMonth = nonStoredBuilding.constructionDateMonth;
+    }
+
+    // TODO should never be merging 2 site types, should check this
+    if (storedBuilding.siteType == null) {
+        storedBuilding.siteType = nonStoredBuilding.siteType;
+    }
+
+    // Always override
+    if (nonStoredBuilding.status != null) {
+        storedBuilding.status = nonStoredBuilding.status;
+    }
+
+    // Merge apartments
     let matchIDs = Array(nonStoredBuilding.apartments.length).fill(-1);
     let usedIDs = [];
     for (let i = 0; i < nonStoredBuilding.apartments.length; i++) {
@@ -116,6 +141,7 @@ function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
         }
     }
 
+    // Merge stations
     let stationMatchIDs = Array(nonStoredBuilding.stations.length).fill(-1);
     let stationUsedIDs = [];
     for (let i = 0; i < nonStoredBuilding.stations.length; i++) {
@@ -148,103 +174,96 @@ function n_mergeBuilding(storedBuilding, nonStoredBuilding) {
  * @returns 
  */
 function n_validateDatabase(database) {
-    let suumoMapCount = 0;
-    let rntAMapCount = 0;
-    let rntBMapCount = 0;
-    for (let i = 0; i < database.coreData.length; i++) {
-        if (database.coreData[i].databaseID != i) {
-            // console.log("0");
+    let buildingMapCount = Array(10).fill(0);
+    let apartmentMapCount = Array(10).fill(0);
+
+    let buildingCount = 0;
+    for (let building of database.coreData) {
+
+        if (building.databaseID != buildingCount) {
+            console.log("VALIDATION FAILED: Building Database ID does not match its place in the list");
             return false;
         }
-        if (database.coreData[i].IDs[SITE_RNT] != null) {
-            let mapResult = database.buildingIDMaps[SITE_RNT].get(database.coreData[i].IDs[SITE_RNT]);
-            if ((mapResult == undefined) || (mapResult.buildingID != i)) {
-                // console.log("1");
-                return false;
-            }
-            rntBMapCount++;
-        }
-        for (let j = 0; j < database.coreData[i].apartments.length; j++) {
-            if (database.coreData[i].apartments[j].databaseID != j) {
-                // console.log("2");
-                return false;
-            }
-            if (database.coreData[i].apartments[j].IDs[SITE_SUUMO] != null) {
-                let mapResult = database.apartmentIDMaps[SITE_SUUMO].get(database.coreData[i].apartments[j].IDs[SITE_SUUMO]);
-                if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
-                    // console.log("4");
+
+        let buildingIDFound = false;
+        for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+            if (building.IDs[i] != null) {
+                if (buildingIDFound) {
+                    console.log("VALIDATION FAILED: One Building has IDs for multiple websites (possible but forbidden by business logic)");
                     return false;
                 }
-                suumoMapCount++;
-            }
-            if (database.coreData[i].apartments[j].IDs[SITE_RNT] != null) {
-                let mapResult = database.apartmentIDMaps[SITE_RNT].get(database.coreData[i].apartments[j].IDs[SITE_RNT]);
-                if ((mapResult == undefined) || (mapResult.buildingID != i) || (mapResult.apartmentID != j)) {
-                    // console.log("5");
+                buildingIDFound = true;
+                let mapResult = database.buildingIDMaps[i].get(building.IDs[i]);
+                if (mapResult == undefined) {
+                    console.log("VALIDATION FAILED: There is no entry in buildingIDMaps for a building");
                     return false;
                 }
-                rntAMapCount++;
+                if (mapResult.buildingID != buildingCount) {
+                    console.log("VALIDATION FAILED: The entry in buildingIDMaps does not point to this building");
+                    return false;
+                }
+                buildingMapCount[i]++;
             }
         }
+
+        let apartmentCount = 0;
+        for (let apartment of building.apartments) {
+            if (apartment.databaseID != apartmentCount) {
+                console.log("VALIDATION FAILED: Apartment Database ID does not match its place in the list");
+                return false;
+            }
+
+            let apartmentIDFound = false;
+            for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+                if (apartment.IDs[i] != null) {
+                    if (apartmentIDFound) {
+                        console.log("VALIDATION FAILED: One Apartment has IDs for multiple websites (possible but forbidden by business logic)");
+                        return false;
+                    }
+                    apartmentIDFound = true;
+
+                    let mapResult = database.apartmentIDMaps[i].get(apartment.IDs[i]);
+                    if (mapResult == undefined) {
+                        console.log("VALIDATION FAILED: There is no entry in apartmentIDMaps for a building");
+                        return false;
+                    }
+                    if (mapResult.buildingID != buildingCount) {
+                        console.log("VALIDATION FAILED: The entry in apartmentIDMaps does not point to this building");
+                        return false;
+                    }
+                    if (mapResult.apartmentID != apartmentCount) {
+                        console.log("VALIDATION FAILED: The entry in apartmentIDMaps does not point to this apartment");
+                        return false;
+                    }
+                    apartmentMapCount[i]++;
+                }
+            }
+            // TODO you may want to check here that at least 1 entry has an ID
+            apartmentCount++;
+        }
+        buildingCount++;
     }
-    if (suumoMapCount != database.apartmentIDMaps[SITE_SUUMO].size) {
-        // console.log("6");
-        return false;
-    }
-    if (rntAMapCount != database.apartmentIDMaps[SITE_RNT].size) {
-        // console.log("7");
-        return false;
-    }
-    if (rntBMapCount != database.buildingIDMaps[SITE_RNT].size) {
-        // console.log("8");
-        return false;
+
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+        if (apartmentMapCount[i] != database.apartmentIDMaps[i].size) {
+            console.log("VALIDATION FAILED: There are more entries in apartmentMapCount that expected");
+            return false;
+        }
+        if (buildingMapCount[i] != database.buildingIDMaps[i].size) {
+            console.log("VALIDATION FAILED: There are more entries in buildingIDMaps that expected");
+            return false;
+        }
     }
     return true;
 }
 
 /**
- * Find this building in the database (no merge is done here, only the raw database entry is returned)
+ * Find this building in the database based on value match only, call n_findBuilding before this one (no merge is done here, only the raw database entry is returned)
  * @param {*} nonStoredBuilding The building to find
  * @param {*} database The database to search
  * @returns The found building or null
  */
-function n_findBuilding(nonStoredBuilding, database) {
-    // Find an existing building
-    if (nonStoredBuilding.databaseID != -1) { // Database ID was provided
-        return database.coreData[nonStoredBuilding.databaseID];
-    } else {
-        // First attempt to find the match based on the unique IDs of the children
-        let foundID = -2;
-        let match = database.buildingIDMaps[SITE_RNT].get((nonStoredBuilding.IDs[SITE_RNT]));
-        if (match != null) {
-            foundID = match.buildingID;
-        }
-        for (let apartment of nonStoredBuilding.apartments) {
-            if (apartment.IDs[SITE_SUUMO]) {
-                match = null;
-                match = database.apartmentIDMaps[SITE_SUUMO].get((apartment.IDs[SITE_SUUMO]));
-                if (match != null) {
-                    if (foundID >= 0 && foundID != match.buildingID) {
-                        throw "Multiple suumo buildings found in 1 entry "
-                    }
-                    foundID = match.buildingID;
-                }
-                match = null;
-                match = database.apartmentIDMaps[SITE_RNT].get((apartment.rnt));
-                if (match != null) {
-                    if (foundID >= 0 && foundID != match.buildingID) {
-                        throw "Multiple rnt buildings found in 1 entry "
-                    }
-                    foundID = match.buildingID;
-                }
-            }
-        }
-        if (foundID >= 0) {
-            return database.coreData[foundID];
-        }
-    }
-
-    // ID match failed, last resort slow entry by entry comparison
+function n_findSimilarBuilding(nonStoredBuilding, database) {
     for (let building of database.coreData) {
         if (n_compareBuilding(building, nonStoredBuilding).similarity >= SIMILARLY_TYPE_POSSIBLE_MATCH) {
             return building;
@@ -253,6 +272,70 @@ function n_findBuilding(nonStoredBuilding, database) {
 
     return null;
 }
+
+/**
+ * Find this building in the database based on ID only (no merge is done here, only the raw database entry is returned)
+ * @param {*} nonStoredBuilding The building to find
+ * @param {*} database The database to search
+ * @returns The found building or null
+ */
+function n_findBuilding(nonStoredBuilding, database) {
+    // Find an existing building
+    if (nonStoredBuilding.databaseID != -1) { // Database ID was provided
+        return database.coreData[nonStoredBuilding.databaseID];
+    }
+
+    // Try to match based on building map entry
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+        if (nonStoredBuilding.IDs[i] != null) {
+            let result = database.buildingIDMaps[i].get(nonStoredBuilding.IDs[i]);
+            if (result != null) {
+                return database.coreData[result.buildingID];
+            }
+        }
+    }
+
+    for (let apartment of nonStoredBuilding.apartments) {
+        for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+            if (apartment.IDs[i] != null) {
+                let result = database.apartmentIDMaps[i].get(apartment.IDs[i]);
+                if (result != null) {
+                    return database.coreData[result.buildingID];
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Convert an array of maps into a savable format
+ * @param {*} IDMap The array to convert
+ * @returns The savable version
+ */
+function n_idMapsToJson(IDMap) {
+    let jsonArray = [];
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+        jsonArray.push(Object.fromEntries(IDMap[i]));
+    }
+    return jsonArray;
+}
+
+/**
+ * Create an array of Maps from savable data
+ * @param {*} jsonArray The saveable data to convert 
+ * @returns The usable array of maps
+ */
+function n_jsonToIDMaps(jsonArray) {
+    let IDMap = [];
+    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
+        IDMap.push(new Map(Object.entries(jsonArray[i])));
+    }
+    return IDMap;
+}
+
+// PRIVATE =============================================================================================================
 
 /**
  * Compare 2 buildings including there apartments. ID matches in the apartments are elevated to ID match for the building 
@@ -276,7 +359,7 @@ function n_compareFullBuilding(storedBuilding, nonStoredBuilding) {
     let apartmentResult = n_findApartmentMappingLevel(storedBuilding.apartments, nonStoredBuilding.apartments, SIMILARLY_TYPE_POSSIBLE_MATCH, matchIDs, usedIDs);
 
     // If an apartment has an ID match then we know the building is a match too
-    if (apartmentResult.similarity >= SIMILARLY_TYPE_ID_MATCH) {
+    if (apartmentResult.similarity >= SIMILARLY_TYPE_ID_MATCH || buildingMatch.similarity >= SIMILARLY_TYPE_ID_MATCH) {
         return {
             similarity: SIMILARLY_TYPE_ID_MATCH,
             identical: buildingMatch.identical && apartmentResult.identical
@@ -380,38 +463,51 @@ function n_compareBuilding(storedBuilding, nonStoredBuilding) {
     // Compare changeable attributes
     n_compareAttribute(storedBuilding.status, nonStoredBuilding.status, attResult);
 
-    // Compare attributes that have complex matching parameters (TODO check this better)
+    // TODO this is complicated, its technical similar but can not be merged. Need to rethink this. For now allow mismatch
+    n_compareAttribute(storedBuilding.siteType, nonStoredBuilding.siteType, attResult);
+
+    // Compare fuzzy data
     n_compareAttribute(storedBuilding.name, nonStoredBuilding.name, attResult);
     n_compareAttribute(storedBuilding.address, nonStoredBuilding.address, attResult);
-    // n_compareAttribute(storedBuilding.suumoName, nonStoredBuilding.suumoName, attResult); // TODO
+    n_compareAttribute(storedBuilding.englishName, nonStoredBuilding.englishName, attResult);
 
     // Compare base attributes (TODO this is not perfect atm)
     attResult.mismatch = false;
-    n_compareAttribute(storedBuilding.age, nonStoredBuilding.age, attResult);
+    n_compareAttribute(storedBuilding.googleMapLink, nonStoredBuilding.googleMapLink, attResult);
     n_compareAttribute(storedBuilding.stories, nonStoredBuilding.stories, attResult);
+
+    // TODO should check for a mismatch here between the 2
+    n_compareAttribute(storedBuilding.age, nonStoredBuilding.age, attResult);
+    n_compareAttribute(storedBuilding.constructionDateYear, nonStoredBuilding.constructionDateYear, attResult);
+    n_compareAttribute(storedBuilding.constructionDateMonth, nonStoredBuilding.constructionDateMonth, attResult);
 
     let matchIDs = Array(nonStoredBuilding.stations.length).fill(-1);
     let usedIDs = [];
     let stationResult = n_compareStations(storedBuilding.stations, nonStoredBuilding.stations, matchIDs, usedIDs);
 
-    // TODO this used to be wrong and the test did not get it, check this
+    // Compare IDs
+    attResult.anyNotNullIdentical = false;
+    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+        n_compareAttribute(storedBuilding.IDs[i], nonStoredBuilding.IDs[i], attResult);
+    }
+
+    // ID match
+    if (attResult.anyNotNullIdentical) {
+        if (attResult.mismatch || stationResult.similarity == SIMILARLY_TYPE_MISMATCH) {
+            throw "An ID matched apartment has mismatching data";
+        }
+        return {
+            similarity: SIMILARLY_TYPE_ID_MATCH,
+            identical: attResult.allIdentical
+        };
+    }
+
     if (attResult.mismatch || stationResult.similarity == SIMILARLY_TYPE_MISMATCH) {
         return {
             similarity: SIMILARLY_TYPE_MISMATCH,
             identical: false
         };
     }
-
-    // TODO
-    // if (storedBuilding.suumoName != null && storedBuilding.suumoAddress != null
-    //     && nonStoredBuilding.suumoName != null && nonStoredBuilding.suumoAddress != null
-    //     && (nonStoredBuilding.suumoName == storedBuilding.suumoName)
-    //     && (nonStoredBuilding.suumoAddress == storedBuilding.suumoAddress)) {
-    //     return {
-    //         similarity: SIMILARLY_TYPE_POSSIBLE_MATCH,
-    //         identical: attResult.allIdentical && stationResult.identical
-    //     };
-    // }
 
     // TODO this failed and tests did not catch it
     if (storedBuilding.name != null && storedBuilding.address != null
@@ -497,11 +593,13 @@ function n_mergeApartment(storedApartment, nonStoredApartment) {
     }
 
     // Only set if the core data is missing
+    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+        if (storedApartment.IDs[i] == null) {
+            storedApartment.IDs[i] = nonStoredApartment.IDs[i];
+        }
+    }
     if (storedApartment.price == null) {
         storedApartment.price = nonStoredApartment.price;
-    }
-    if (storedApartment.managementFee == null) {
-        storedApartment.managementFee = nonStoredApartment.managementFee;
     }
     if (storedApartment.floor == null) {
         storedApartment.floor = nonStoredApartment.floor;
@@ -518,11 +616,13 @@ function n_mergeApartment(storedApartment, nonStoredApartment) {
     if (storedApartment.size == null) {
         storedApartment.size = nonStoredApartment.size;
     }
-    if (storedApartment.urls[SITE_SUUMO] == null) {
-        storedApartment.urls[SITE_SUUMO] = nonStoredApartment.urls[SITE_SUUMO];
+    if (storedApartment.managementFee == null) {
+        storedApartment.managementFee = nonStoredApartment.managementFee;
     }
-    if (storedApartment.IDs[SITE_SUUMO] == null) {
-        storedApartment.IDs[SITE_SUUMO] = nonStoredApartment.IDs[SITE_SUUMO];
+    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+        if (storedApartment.urls[i] == null) {
+            storedApartment.urls[i] = nonStoredApartment.urls[i];
+        }
     }
 }
 
@@ -545,18 +645,22 @@ function n_compareApartment(storedApartments, nonStoredApartments) {
     // Compare base attributes
     attResult.mismatch = false;
     n_compareAttribute(storedApartments.price, nonStoredApartments.price, attResult);
-    n_compareAttribute(storedApartments.managementFee, nonStoredApartments.managementFee, attResult);
     n_compareAttribute(storedApartments.floor, nonStoredApartments.floor, attResult);
     n_compareAttribute(storedApartments.deposit, nonStoredApartments.deposit, attResult);
     n_compareAttribute(storedApartments.keyMoney, nonStoredApartments.keyMoney, attResult);
     n_compareAttribute(storedApartments.layout, nonStoredApartments.layout, attResult);
     n_compareAttribute(storedApartments.size, nonStoredApartments.size, attResult);
-    n_compareAttribute(storedApartments.urls[SITE_SUUMO], nonStoredApartments.urls[SITE_SUUMO], attResult); // TODO needs to be redone
+    n_compareAttribute(storedApartments.managementFee, nonStoredApartments.managementFee, attResult);
+
+    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+        n_compareAttribute(storedApartments.urls[i], nonStoredApartments.urls[i], attResult);
+    }
 
     // Compare IDs
     attResult.anyNotNullIdentical = false;
-    // TODO needs to be redone
-    n_compareAttribute(storedApartments.IDs[SITE_SUUMO], nonStoredApartments.IDs[SITE_SUUMO], attResult);
+    for (let i = 0; i < 1; i++) { // MAX_SITE_NUM
+        n_compareAttribute(storedApartments.IDs[i], nonStoredApartments.IDs[i], attResult);
+    }
 
     // ID match
     if (attResult.anyNotNullIdentical) {
@@ -619,37 +723,12 @@ function n_compareAttribute(att1, att2, attResult) {
     }
 }
 
-/**
- * Convert an array of maps into a savable format
- * @param {*} IDMap The array to convert
- * @returns The savable version
- */
-function n_idMapsToJson(IDMap) {
-    let jsonArray = [];
-    for (let i = 0; i < 10; i++) {
-        jsonArray.push(Object.fromEntries(IDMap[i]));
-    }
-    return jsonArray;
-}
-
-/**
- * Create an array of Maps from savable data
- * @param {*} jsonArray The saveable data to convert 
- * @returns The usable array of maps
- */
-function n_jsonToIDMaps(jsonArray) {
-    let IDMap = [];
-    for (let i = 0; i < 10; i++) { // MAX_SITE_NUM
-        IDMap.push(new Map(Object.entries(jsonArray[i])));
-    }
-    return IDMap;
-}
-
 if (typeof require === 'function') {
     module.exports = {
         n_mergeIntoDatabase: n_mergeIntoDatabase,
         n_mergeBuilding: n_mergeBuilding,
         n_validateDatabase: n_validateDatabase,
+        n_findSimilarBuilding: n_findSimilarBuilding,
         n_findBuilding: n_findBuilding,
         n_compareFullBuilding: n_compareFullBuilding,
         n_findApartmentMappingLevel: n_findApartmentMappingLevel,

@@ -44,6 +44,14 @@ async function saveBuilding(updatedBuilding) {
 }
 
 /**
+ * Export all saved data
+ */
+ async function expertAll() {
+    let database = await loadDatabase(false);
+    expertAll_Impl(database);
+}
+
+/**
  * Save the entire database as a JSon file
  */
 async function exportDatabase() {

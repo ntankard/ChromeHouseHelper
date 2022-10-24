@@ -32,21 +32,8 @@ function generateTestStations(size) {
 
 function makeDatabase(buildings) {
     let database = new Types.FullData();
-    database.coreData = buildings;
-    for (let i = 0; i < database.coreData.length; i++) {
-        database.coreData[i].databaseID = i;
-        if (database.coreData[i].IDs[SITE_RNT] != null) {
-            database.buildingIDMaps[Types.SITE_RNT].set(database.coreData[i].IDs[SITE_RNT], { buildingID: i });
-        }
-        for (let j = 0; j < database.coreData[i].apartments.length; j++) {
-            database.coreData[i].apartments[j].databaseID = j;
-            if (database.coreData[i].apartments[j].IDs[SITE_SUUMO] != null) {
-                database.apartmentIDMaps[Types.SITE_SUUMO].set(database.coreData[i].apartments[j].IDs[SITE_SUUMO], { buildingID: i, apartmentID: j });
-            }
-            if (database.coreData[i].apartments[j].IDs[SITE_RNT] != null) {
-                database.apartmentIDMaps[Types.SITE_RNT].set(database.coreData[i].apartments[j].IDs[SITE_RNT], { buildingID: i, apartmentID: j });
-            }
-        }
+    for (let building of buildings) {
+        n_mergeIntoDatabase(building, database);
     }
 
     return database;
@@ -448,6 +435,59 @@ test("n_validateDatabase", () => {
     expect(DatabaseUtil.n_validateDatabase(database)).toBe(false);
 })
 
+test("n_findSimilarBuilding", () => {
+    let buildings = generateTestBuildings(3);
+    buildings[0].apartments = generateTestApartments(1);
+    buildings[2].apartments = generateTestApartments(4);
+    buildings[1].name = "Test";
+    buildings[1].address = "Test2";
+    let database = makeDatabase(buildings);
+    testBuilding = new Types.Building();
+    testBuilding.name = "Test";
+    testBuilding.address = "Test2";
+    let result = DatabaseUtil.n_findBuilding(testBuilding, database);
+    expect(result).toBe(null);
+    result = DatabaseUtil.n_findSimilarBuilding(testBuilding, database);
+    expect(result.databaseID).toBe(1);
+    expect(result).toBe(buildings[1]);
+
+    // TODO
+    buildings = generateTestBuildings(3);
+    buildings[0].apartments = generateTestApartments(1);
+    buildings[2].apartments = generateTestApartments(4);
+    buildings[1].name = "Test";
+    buildings[1].address = "Test2";
+    database = makeDatabase(buildings);
+    testBuilding = new Types.Building();
+    testBuilding.name = "Test";
+    testBuilding.address = "Test2";
+    testBuilding.stories = 5;
+    result = DatabaseUtil.n_findBuilding(testBuilding, database);
+    expect(result).toBe(null);
+    result = DatabaseUtil.n_findSimilarBuilding(testBuilding, database);
+    expect(result.databaseID).toBe(1);
+    expect(result).toBe(buildings[1]);
+
+    buildings = generateTestBuildings(3);
+    buildings[0].apartments = generateTestApartments(1);
+    buildings[2].apartments = generateTestApartments(4);
+    buildings[1].name = "Test";
+    buildings[1].address = "Test2";
+    buildings[1].stories = 6;
+    database = makeDatabase(buildings);
+    testBuilding = new Types.Building();
+    testBuilding.name = "Test";
+    testBuilding.address = "Test2";
+    testBuilding.stories = 5;
+    result = DatabaseUtil.n_findBuilding(testBuilding, database);
+    expect(result).toBe(null);
+
+    // TODO here we should keep searching to check for a conflicting building ID. This happens if the data on the product page does not  match for 2 entries
+    // https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&ta=11&sc=11101&cb=0.0&ct=9999999&et=9999999&cn=9999999&mb=0&mt=9999999&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1
+    // https://suumo.jp/chintai/jnc_000073855175/?bc=100294679086
+    // TODO add case where 1 building has multiple suumo ID in the map
+})
+
 test("n_findBuilding", () => {
     let buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
@@ -478,6 +518,15 @@ test("n_findBuilding", () => {
     expect(result).toBe(buildings[2]);
 
     buildings = generateTestBuildings(3);
+    buildings[2].IDs[SITE_SUUMO] = String(300);
+    database = makeDatabase(buildings);
+    testBuilding = new Types.Building();
+    testBuilding.IDs[SITE_SUUMO] = String(300);
+    result = DatabaseUtil.n_findBuilding(testBuilding, database);
+    expect(result.databaseID).toBe(2);
+    expect(result).toBe(buildings[2]);
+
+    buildings = generateTestBuildings(3);
     buildings[0].apartments = generateTestApartments(1);
     buildings[2].apartments = generateTestApartments(4);
     buildings[2].apartments[0].IDs[SITE_SUUMO] = String(300);
@@ -488,54 +537,6 @@ test("n_findBuilding", () => {
     result = DatabaseUtil.n_findBuilding(testBuilding, database);
     expect(result.databaseID).toBe(2);
     expect(result).toBe(buildings[2]);
-
-    // TODO
-    // buildings = generateTestBuildings(3);
-    // buildings[0].apartments = generateTestApartments(1);
-    // buildings[2].apartments = generateTestApartments(4);
-    // buildings[1].name = "Test";
-    // buildings[1].address = "Test2";
-    // database = makeDatabase(buildings);
-    // testBuilding = new Types.Building();
-    // testBuilding.name = "Test";
-    // testBuilding.address = "Test2";
-    // result = DatabaseUtil.n_findBuilding(testBuilding, database);
-    // expect(result.databaseID).toBe(1);
-    // expect(result).toBe(buildings[1]);
-
-    // TODO
-    // buildings = generateTestBuildings(3);
-    // buildings[0].apartments = generateTestApartments(1);
-    // buildings[2].apartments = generateTestApartments(4);
-    // buildings[1].name = "Test";
-    // buildings[1].address = "Test2";
-    // database = makeDatabase(buildings);
-    // testBuilding = new Types.Building();
-    // testBuilding.name = "Test";
-    // testBuilding.address = "Test2";
-    // testBuilding.stories = 5;
-    // result = DatabaseUtil.n_findBuilding(testBuilding, database);
-    // expect(result.databaseID).toBe(1);
-    // expect(result).toBe(buildings[1]);
-
-    buildings = generateTestBuildings(3);
-    buildings[0].apartments = generateTestApartments(1);
-    buildings[2].apartments = generateTestApartments(4);
-    buildings[1].name = "Test";
-    buildings[1].address = "Test2";
-    buildings[1].stories = 6;
-    database = makeDatabase(buildings);
-    testBuilding = new Types.Building();
-    testBuilding.name = "Test";
-    testBuilding.address = "Test2";
-    testBuilding.stories = 5;
-    result = DatabaseUtil.n_findBuilding(testBuilding, database);
-    expect(result).toBe(null);
-
-    // TODO here we should keep searching to check for a conflicting building ID. This happens if the data on the product page does not  match for 2 entries
-    // https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&ta=11&sc=11101&cb=0.0&ct=9999999&et=9999999&cn=9999999&mb=0&mt=9999999&shkr1=03&shkr2=03&shkr3=03&shkr4=03&fw2=&srch_navi=1
-    // https://suumo.jp/chintai/jnc_000073855175/?bc=100294679086
-    // TODO add case where 1 building has multiple suumo ID in the map
 })
 
 test("n_compareFullBuilding", () => {

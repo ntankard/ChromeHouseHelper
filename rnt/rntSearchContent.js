@@ -36,10 +36,8 @@ function getBuildings() {
         building.stories = parseInt(buildingInfo.children[19].innerHTML.replace("地上 ", "").replace("階", ""));
 
         // building.age NA for this site
-        building.constructionDate = {
-            year: parseInt(buildingInfo.children[13].innerHTML.split("年")[0]),
-            month: parseInt(buildingInfo.children[13].innerHTML.split("年")[1].replace("月", ""))
-        }
+        building.constructionDateYear = parseInt(buildingInfo.children[13].innerHTML.split("年")[0]);
+        building.constructionDateMonth = parseInt(buildingInfo.children[13].innerHTML.split("年")[1].replace("月", ""));
 
         for (stationContainer of buildingInfo.children[5].children[0].children) {
             let station = new Station();
@@ -76,7 +74,6 @@ function getBuildings() {
             }
             apartment.layout = layoutSection[1].replaceAll(" ", "");
             apartment.size = parseFloat(layoutSection[2].replace("m²", ""));
-
             apartment.managementFee = parseMoney(moneySection[2].innerHTML);
 
             // this.urls TODO
