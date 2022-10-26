@@ -114,6 +114,37 @@
                 "tokyu/tokyuApartmentScrape.js",
                 "content/apartmentContent.js"
             ]
+        },
+        {
+            "matches": [
+                "https://www.rnt.co.jp/search/line/"
+            ],
+            "js": [
+                "allStations.js",
+                "utils/coreDataTypes.js",
+                "tokyu/tokyuApartmentScrape.js",
+                "rnt/rntLineSearch.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://suumo.jp/chintai/tokyo/ensen/*"
+            ],
+            "js": [
+                "allStations.js",
+                "utils/coreDataTypes.js",
+                "suumo/suumoLineSearch.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://suumo.jp/jj/chintai/kensaku/*"
+            ],
+            "js": [
+                "allStations.js",
+                "utils/coreDataTypes.js",
+                "suumo/suumoStationSearch.js"
+            ]
         }
     ],
     "permissions": [
