@@ -145,6 +145,29 @@
                 "utils/coreDataTypes.js",
                 "suumo/suumoStationSearch.js"
             ]
+        },
+        {
+            "matches": [
+                "https://rent.tokyu-housing-lease.co.jp/rent_search/route"
+            ],
+            "js": [
+                "allStations.js",
+                "utils/coreDataTypes.js",
+                "tokyu/tokyuLineSearch.js"
+            ]
+        },
+        {
+            "matches": [
+                "https://rent.tokyu-housing-lease.co.jp/rent_search/*"
+            ],
+            "exclude_matches": [
+                "https://rent.tokyu-housing-lease.co.jp/rent_search/route/*"
+            ],
+            "js": [
+                "allStations.js",
+                "utils/coreDataTypes.js",
+                "tokyu/tokyuStationSearch.js"
+            ]
         }
     ],
     "permissions": [
